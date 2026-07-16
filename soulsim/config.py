@@ -158,6 +158,15 @@ class Hypotheses:
     thread_pull: float = 1.0
     guided_birth: float = 1.0
 
+    # -- arts: rasa as the emotional weather system ---------------------------
+    art_rate: float = 0.008     # per-adult-per-year chance to compose, scaled by
+                                # emotional sensitivity and the pressure of the life
+    art_pull: float = 0.6       # how strongly heard rasa tunes the hearer's gunas
+    # THE CATHARSIS DIAL: does tragedy purge (Aristotle, +1: karuna -> sattva)
+    # or contaminate (Plato, -1: karuna -> tamas)? Two millennia of aesthetics
+    # as a sweepable hypothesis.
+    catharsis: float = 1.0
+
     # -- the meta-loop: emergent religion ------------------------------------
     revelation_rate: float = 0.004     # per-adult-per-year chance, scaled by clarity
     myth_mutation: float = 0.25        # per-myth-per-year retelling corruption

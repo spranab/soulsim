@@ -24,6 +24,7 @@ from .events import EVENT_TEMPLATES
 from .karma import apply_outcome
 from .metrics import MetricsLog, YearRecord
 from .person import Person
+from .arts import ArtSystem
 from .culture import CultureSystem
 from .religion import ReligionSystem
 from .soul import (SoulState, assess_moksha, clamp, CORE_VIRTUES, INSTABILITIES,
@@ -85,6 +86,8 @@ class Universe:
         self.religion = ReligionSystem(self.crng)
         # Deeds become myth: traces, utterances, and the noncausal audit
         self.culture = CultureSystem(self.crng)
+        # Souls give form to their inner life; the world builds a library
+        self.arts = ArtSystem(self.crng)
         # Chronicle: notable events, for viewers and posterity
         self.chronicle: List[tuple] = []       # (year, kind, text)
         self._first_moksha_noted = False
@@ -741,6 +744,8 @@ class Universe:
             institutions=self.religion.counts()[1],
             doctrine_accuracy=self.religion.doctrine_accuracy(),
             doctrine_coverage=self.religion.doctrine_coverage(),
+            artworks_alive=len(self.arts.works),
+            classics=len(self.arts.library),
             historical_fidelity=self.culture.fidelity(
                 [m for m in self.religion.myths if m.story is not None]),
             story_myths=sum(1 for m in self.religion.myths if m.story is not None),
@@ -782,6 +787,8 @@ class Universe:
                   if p.is_adult(self.cfg.rules.adult_age) and not p.is_avatar]
         self.culture.utter(adults, self.year, self.cfg.hyp)
         self._exposure(adults)
+        for kind, text in self.arts.step(self, yuga, adults):
+            self.note(kind, text)
 
         # The meta-loop: the world's own inhabitants write and rewrite its scriptures
         for kind, text in self.religion.step(self, yuga):

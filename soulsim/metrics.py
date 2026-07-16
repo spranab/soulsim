@@ -65,6 +65,9 @@ class YearRecord:
     doctrine_coverage: float = 0.0  # fraction of ground truths anyone still teaches
     historical_fidelity: float = 0.0  # story-claims vs the audit (analytics only)
     story_myths: int = 0
+    # arts — the world's emotional weather and its growing library
+    artworks_alive: int = 0
+    classics: int = 0
 
 
 @dataclass

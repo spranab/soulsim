@@ -354,4 +354,8 @@ Systems," Zenodo, 2026. doi:10.5281/zenodo.18793952.
 
 ---
 
-*Code, experiment scripts, and run logs are available from the author.*
+## Code Availability
+
+The complete engine, experiment harnesses, wall tests, and interactive
+visualizations are open-source at
+<https://github.com/spranab/soulsim> (v1.0, the version described here).

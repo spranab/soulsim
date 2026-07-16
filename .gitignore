@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Run artifacts
+*.csv
+*.json
+!package.json
+.DS_Store
+
+# never publish: local MCP config carries live API keys
+.mcp.json
+.tracker.db
+
+# personal/collaboration artifacts — local only
+sakshi.html
+witness.py
+build_sakshi.py

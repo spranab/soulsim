@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>soulsim — the world, live</title>
+<style>
+:root{color-scheme:dark;
+ --bg:#0b0d16;--s1:#141724;--s2:#1b1f30;--border:#272c42;--bstrong:#3a4160;
+ --ink:#eef0fa;--sec:#aab0cc;--muted:#767d9e;
+ --accent:#e8863a;--good:#57c785;--bad:#e56b6b;--blue:#5b9ce6;--violet:#a08ef0;--gold:#e6c35a;
+ --disp:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,ui-serif,serif;
+ --body:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+ --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1280px;margin:0 auto;padding:10px 16px 50px}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0 10px}
+.wname{font-family:var(--disp);font-weight:600;font-size:1.05rem}
+.live{font-family:var(--mono);font-size:.62rem;color:var(--good);border:1px solid var(--good);
+ border-radius:999px;padding:1px 8px;letter-spacing:.1em}
+.yearbox{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.25rem;font-weight:700;min-width:78px}
+.yearbox small{display:block;font-size:.54rem;font-weight:400;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.agechip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.74rem;
+ padding:4px 11px;border:1px solid var(--bstrong);border-radius:999px}
+.agechip .dot{width:9px;height:9px;border-radius:50%}
+button{font-family:var(--mono);cursor:pointer;background:var(--s2);color:var(--ink);
+ border:1px solid var(--bstrong);border-radius:8px;padding:7px 12px;font-size:.8rem}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:#14100a;border-color:var(--accent);font-weight:600}
+button.armed{background:var(--violet);color:#14100a;border-color:var(--violet)}
+button:disabled{opacity:.35;cursor:not-allowed}
+input[type=range]{accent-color:var(--accent);width:100%}
+label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px}
+@media(max-width:960px){.stage{grid-template-columns:1fr}}
+#canvasbox{position:relative;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#05060c}
+canvas{display:block;width:100%;height:auto;cursor:crosshair}
+.kpirow{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.pill{font-family:var(--mono);font-size:.66rem;background:rgba(5,6,12,.55);backdrop-filter:blur(4px);
+ border-radius:999px;padding:3px 11px;color:var(--sec)}
+.pill b{color:var(--ink);font-variant-numeric:tabular-nums}
+.pill b.flame{color:var(--accent)}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:14px;font-family:var(--disp);
+ font-size:1rem;color:var(--gold);text-shadow:0 2px 14px rgba(0,0,0,.8);opacity:0;transition:opacity .5s;
+ pointer-events:none;font-style:italic}
+.toast.on{opacity:1}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:13px 15px;margin-bottom:10px}
+h2{font-family:var(--disp);font-weight:600;font-size:1rem;margin:0 0 4px}
+.sub{color:var(--muted);font-size:.74rem;margin:0 0 8px}
+.divine{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.divine button{width:100%}
+.liveknob{margin-top:9px}
+.liveknob .val{float:right;font-family:var(--mono);font-size:.68rem;color:var(--accent)}
+#inspector .nm{font-family:var(--disp);font-weight:600;font-size:1.05rem}
+#inspector .st{font-family:var(--mono);font-size:.68rem;color:var(--sec);margin:3px 0 8px}
+.bars{display:grid;grid-template-columns:86px 1fr 34px;gap:5px 8px;align-items:center;font-family:var(--mono);font-size:.64rem}
+.bars .lab{color:var(--muted)}.bars .val{text-align:right;color:var(--sec)}
+.track{height:5px;background:var(--s2);border-radius:3px;overflow:hidden}
+.fill{height:100%;border-radius:3px}
+.chron{max-height:250px;overflow-y:auto}
+.ev{display:flex;gap:7px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.72rem;align-items:baseline}
+.ev .y{font-family:var(--mono);color:var(--muted);flex:none;width:44px;font-variant-numeric:tabular-nums}
+.ev .t{color:var(--sec)}
+.ev.k-avatar .t{color:var(--violet)}.ev.k-moksha .t{color:var(--gold)}
+.ev.k-pralaya .t{color:var(--accent)}.ev.k-myth .t,.ev.k-institution .t{color:var(--blue)}
+.ev.k-corruption .t,.ev.k-doom .t{color:var(--bad)}.ev.k-reform .t{color:var(--good)}
+footer{margin-top:8px;color:var(--muted);font-size:.7rem;font-family:var(--mono)}
+</style></head><body>
+<div class="wrap">
+<div class="topbar">
+  <span class="wname" id="c-name">…</span><span class="live">LIVE · PYTHON</span>
+  <div class="yearbox"><small>year</small><span id="c-year">0</span></div>
+  <span class="agechip"><span class="dot" id="c-agedot"></span><span id="c-agename">—</span></span>
+  <button class="primary" id="btn-play">❚❚</button>
+  <button id="btn-speed">4×</button>
+</div>
+<div class="stage">
+  <div id="canvasbox">
+    <canvas id="world" width="1000" height="620" aria-label="the living world"></canvas>
+    <div class="kpirow">
+      <span class="pill">alive <b id="k-pop">—</b></span>
+      <span class="pill"><span id="k-lib-l">liberated</span> <b class="flame" id="k-lib">—</b></span>
+      <span class="pill">virtue <b id="k-virt">—</b></span>
+      <span class="pill">effortless <b id="k-eff">—</b></span>
+      <span class="pill">doctrine <b id="k-doct">—</b></span>
+      <span class="pill" id="pill-armed" style="display:none;color:var(--violet)">touch the world…</span>
+    </div>
+    <div class="toast" id="toast"></div>
+  </div>
+  <div class="rail">
+    <div class="card">
+      <h2>The hand of god</h2>
+      <div class="divine">
+        <button id="d-avatar">☸ avatar</button><button id="d-pralaya">☾ pralaya</button>
+        <button id="d-miracle">✦ miracle</button><button id="d-calamity">⚡ calamity</button>
+      </div>
+      <div class="liveknob"><label>Temptation of the age <span class="val" id="v-tempt">+0.00</span></label>
+        <input type="range" id="d-tempt" min="-0.4" max="0.4" step="0.05" value="0"></div>
+      <p class="sub" style="margin:8px 0 0">Miracle/calamity arm your hand — then touch the map.
+      Souls are colored by their ruling guṇa: <span style="color:var(--gold)">sattva</span>,
+      <span style="color:var(--bad)">rajas</span>, <span style="color:#8a93b8">tamas</span>.</p>
+    </div>
+    <div class="card" id="inspector"><h2>Inspector</h2>
+      <p class="sub" id="insp-empty">Click a light — this is the REAL soul, live from Python.</p>
+      <div id="insp-body"></div></div>
+    <div class="card"><h2>Chronicle</h2><div class="chron" id="chron"></div></div>
+  </div>
+</div>
+<footer id="c-foot">connecting to the engine…</footer>
+</div>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const clamp=(x,l=0,h=1)=>x<l?l:x>h?h:x;
+const CW=1000,CH=620,GROUND_Y=CH*.60;
+const AGDOT=["var(--blue)","var(--good)","var(--gold)","var(--bad)"];
+const AMB=[1,.85,.65,.42];
+const KCOL=["#9fb4d8","#e6c35a","#e56b6b","#7d86a8","#fff6d8"]; // child, sattva, rajas, tamas, avatar
+let META=null,S=null,ARMED=null,SEL=null;
+const P=new Map();   // pid -> {x,y,tx,ty,k}
+let FX=[],STARS=[],SKYSTARS=[],libSeen=0,prevPralaya=-1;
+
+const cv=$("world"),ctx=cv.getContext("2d");
+(function stars(){let a=1;const r=()=> (a=(a*16807)%2147483647)/2147483647;a=99;
+ for(let i=0;i<120;i++)STARS.push([r()*CW,r()*GROUND_Y*.85,r()*1.3+.3,r()]);})();
+
+function drawBuilding(p,glow){
+ const x=p.x,y=p.y;ctx.save();ctx.translate(x,y);
+ const win=(wx,wy,w,h)=>{ctx.fillStyle=`rgba(255,196,110,${.25+.65*glow})`;ctx.fillRect(wx,wy,w,h);};
+ ctx.fillStyle="#1a2135";ctx.strokeStyle="rgba(120,140,200,.25)";
+ const k=p.k;
+ if(k==="tower"){ctx.fillRect(-13,-95,26,95);
+  ctx.beginPath();ctx.moveTo(-17,-95);ctx.lineTo(0,-125);ctx.lineTo(17,-95);ctx.closePath();
+  ctx.fillStyle="#232c48";ctx.fill();win(-6,-85,4,6);win(2,-66,4,6);win(-6,-46,4,6);win(2,-28,4,6);}
+ else if(k==="hall"){ctx.fillRect(-46,-44,92,44);
+  ctx.beginPath();ctx.moveTo(-52,-44);ctx.lineTo(0,-70);ctx.lineTo(52,-44);ctx.closePath();
+  ctx.fillStyle="#232c48";ctx.fill();for(let i=-3;i<=3;i+=2)win(i*11-2,-32,5,9);}
+ else if(k==="gallery"){ctx.fillRect(-40,-30,80,30);for(let i=-3;i<=3;i+=2)win(i*10-2,-22,5,12);}
+ else if(k==="dome"){ctx.beginPath();ctx.arc(0,-14,30,Math.PI,0);ctx.fill();
+  ctx.fillRect(-30,-14,60,14);win(-14,-10,6,8);win(8,-10,6,8);}
+ else if(k==="glass"){ctx.globalAlpha=.8;ctx.beginPath();ctx.moveTo(-34,0);ctx.lineTo(0,-46);
+  ctx.lineTo(34,0);ctx.closePath();ctx.fillStyle=`rgba(140,220,190,${.14+.24*glow})`;
+  ctx.fill();ctx.stroke();ctx.globalAlpha=1;}
+ else if(k==="arch"){ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-30,-22);
+  ctx.arc(0,-22,30,Math.PI,0);ctx.lineTo(30,0);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.arc(0,-6,10,Math.PI,0);ctx.fillStyle=`rgba(255,196,110,${.2+.4*glow})`;ctx.fill();}
+ else if(k==="steps"){for(let i=0;i<4;i++)ctx.fillRect(-40+6*i,-6*i-6,80-12*i,6);}
+ else if(k==="tree"){ctx.fillStyle="#2a2033";ctx.fillRect(-4,-34,8,34);
+  ctx.fillStyle="rgba(90,160,110,.5)";
+  ctx.beginPath();ctx.arc(0,-46,26,0,7);ctx.fill();
+  ctx.beginPath();ctx.arc(-18,-36,15,0,7);ctx.fill();
+  ctx.beginPath();ctx.arc(18,-36,15,0,7);ctx.fill();}
+ else if(k==="hut"){ctx.fillRect(-20,-22,40,22);
+  ctx.beginPath();ctx.moveTo(-26,-22);ctx.lineTo(0,-42);ctx.lineTo(26,-22);ctx.closePath();
+  ctx.fillStyle="#232c48";ctx.fill();win(-4,-16,8,8);}
+ else if(k==="stalls"){for(let i=-1;i<=1;i++){ctx.fillRect(i*26-10,-18,20,18);
+  ctx.fillStyle=["#5a3040","#3f4a2c","#503d28"][i+1];ctx.fillRect(i*26-12,-24,24,7);ctx.fillStyle="#1a2135";}}
+ else if(k==="pool"){ctx.beginPath();ctx.ellipse(0,-4,36,11,0,0,7);
+  ctx.fillStyle=`rgba(110,170,230,${.25+.3*glow})`;ctx.fill();
+  ctx.strokeStyle="rgba(160,190,240,.4)";ctx.stroke();}
+ else if(k==="pyre"){ctx.fillStyle="#241c22";ctx.fillRect(-16,-6,32,6);
+  ctx.beginPath();ctx.moveTo(-7,-6);ctx.lineTo(0,-24-8*glow);ctx.lineTo(7,-6);ctx.closePath();
+  ctx.fillStyle=`rgba(240,140,70,${.5+.4*glow})`;ctx.fill();}
+ else if(k==="module"){ctx.fillRect(-34,-26,68,26);ctx.strokeRect(-34,-26,68,26);
+  win(-24,-18,7,7);win(-6,-18,7,7);win(12,-18,7,7);}
+ ctx.restore();
+ ctx.fillStyle="rgba(190,200,235,.55)";ctx.font="10px ui-monospace,Menlo,monospace";
+ ctx.textAlign="center";ctx.fillText(p.n,x,y+18);}
+
+function fx(type,x,y,c){FX.push({type,x,y,c,t:0});if(FX.length>160)FX.shift();}
+let toastT=null;
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");
+ clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("on"),3400);}
+
+let last=0;
+function frame(ts){
+ const dt=Math.min(.05,(ts-last)/1000||.016);last=ts;
+ if(META&&S){
+  const amb=AMB[S.ageIdx];
+  const g=ctx.createLinearGradient(0,0,0,CH);
+  g.addColorStop(0,META.theme.sky[0]);g.addColorStop(1,META.theme.sky[1]);
+  ctx.fillStyle=g;ctx.fillRect(0,0,CW,CH);
+  ctx.fillStyle=`rgba(0,0,0,${(1-amb)*.5})`;ctx.fillRect(0,0,CW,CH);
+  if(S.ageIdx===3){ctx.fillStyle="rgba(160,40,40,.07)";ctx.fillRect(0,0,CW,CH);}
+  for(const st of STARS){ctx.globalAlpha=(0.25+0.6*st[3])*(.5+.5*amb);
+   ctx.fillStyle="#cdd6ff";ctx.fillRect(st[0],st[1],st[2],st[2]);}
+  ctx.globalAlpha=1;
+  // the liberated: permanent stars
+  for(const st of SKYSTARS){ctx.globalAlpha=.85;
+   ctx.fillStyle="#ffe9a3";ctx.beginPath();ctx.arc(st[0],st[1],1.6,0,7);ctx.fill();
+   ctx.globalAlpha=.25;ctx.beginPath();ctx.arc(st[0],st[1],3.6,0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+  // ground
+  ctx.fillStyle=META.theme.ground;
+  ctx.beginPath();ctx.moveTo(0,GROUND_Y+16);
+  ctx.bezierCurveTo(CW*.3,GROUND_Y-18,CW*.7,GROUND_Y+34,CW,GROUND_Y);
+  ctx.lineTo(CW,CH);ctx.lineTo(0,CH);ctx.closePath();ctx.fill();
+  // the yoni strata: the pre-human deep, rising toward the world
+  const L=S.ladder,base=CH-14;
+  const strat=(label,count,depth,col)=>{
+   ctx.fillStyle=col;ctx.globalAlpha=.85;
+   ctx.font="9px ui-monospace,Menlo,monospace";ctx.textAlign="left";
+   ctx.fillText(`${label} ${count}`,12,base-depth);
+   ctx.globalAlpha=.16;
+   for(let i=0;i<Math.min(60,count/6);i++){
+    const x=90+(i*137)%(CW-140),tw=.5+((i*97)%10)/14;
+    ctx.beginPath();ctx.arc(x,base-depth-2+((i*53)%7)-3,tw,0,7);ctx.fill();}
+   ctx.globalAlpha=1;};
+  strat("animal",L.animal,26,"#8fae7a");
+  strat("plant",L.plant,14,"#6a9a6a");
+  strat("mineral",L.mineral,2,"#7d86a8");
+  ctx.fillStyle="rgba(190,200,235,.35)";ctx.font="9px ui-monospace,Menlo,monospace";
+  ctx.textAlign="right";ctx.fillText(`between lives: ${S.waiting}`,CW-12,base-2);
+  // paths + buildings
+  const PL=META.theme.places;
+  ctx.strokeStyle="rgba(150,160,210,.10)";ctx.lineWidth=3;
+  for(let i=0;i<PL.length;i++)for(let j=i+1;j<PL.length;j++){if((i+j)%2)continue;
+   ctx.beginPath();ctx.moveTo(PL[i].x,PL[i].y+8);
+   ctx.quadraticCurveTo((PL[i].x+PL[j].x)/2,(PL[i].y+PL[j].y)/2+22,PL[j].x,PL[j].y+8);ctx.stroke();}
+  ctx.lineWidth=1;
+  for(const p of PL)drawBuilding(p,amb*.9+.1);
+  // souls (interpolated toward server targets)
+  for(const [pid,s] of P){
+   const dx=s.tx-s.x,dy=s.ty-s.y,d=Math.hypot(dx,dy);
+   const sp=(26+(pid%7))*dt;
+   if(d>1.5){s.x+=dx/d*Math.min(sp,d);s.y+=dy/d*Math.min(sp,d);}
+   const r=s.k===4?5:(s.k===0?1.6:2.6);
+   const col=KCOL[s.k];
+   ctx.beginPath();ctx.arc(s.x,s.y,r+3,0,7);
+   ctx.fillStyle=s.k===4?`rgba(255,240,190,${.28+.14*Math.sin(ts/300)})`:col+"2e";ctx.fill();
+   ctx.beginPath();ctx.arc(s.x,s.y,r,0,7);ctx.fillStyle=col;ctx.fill();
+   if(SEL===pid){ctx.beginPath();ctx.arc(s.x,s.y,r+7,0,7);
+    ctx.strokeStyle="#fff";ctx.lineWidth=1.2;ctx.stroke();ctx.lineWidth=1;}}
+  // effects
+  FX=FX.filter(f=>f.t<1);
+  for(const f of FX){f.t+=dt*(f.type==="pralaya"?.35:(f.type==="moksha"?.25:.9));
+   const u=f.t;
+   if(f.type==="moksha"){const y=f.y-(f.y-40)*u;
+    ctx.globalAlpha=1-u*.7;ctx.beginPath();ctx.arc(f.x,y,3.5,0,7);
+    ctx.fillStyle="#ffe9a3";ctx.fill();ctx.globalAlpha=1;}
+   else if(f.type==="birth"){ctx.globalAlpha=1-u;ctx.beginPath();ctx.arc(f.x,f.y,2+6*u,0,7);
+    ctx.strokeStyle="#9fd7ff";ctx.stroke();ctx.globalAlpha=1;}
+   else if(f.type==="avatar"){ctx.globalAlpha=(1-u)*.7;
+    const g2=ctx.createLinearGradient(f.x,f.y-190,f.x,f.y);
+    g2.addColorStop(0,"rgba(255,244,200,0)");g2.addColorStop(1,"rgba(255,244,200,.8)");
+    ctx.fillStyle=g2;ctx.fillRect(f.x-13+6*u,f.y-190,26-12*u,190);ctx.globalAlpha=1;}
+   else if(f.type==="miracle"||f.type==="calamity"){
+    ctx.globalAlpha=(1-u)*.8;ctx.beginPath();ctx.arc(f.x,f.y,10+130*u,0,7);
+    ctx.strokeStyle=f.type==="miracle"?"#ffe9a3":"#e56b6b";ctx.lineWidth=2;ctx.stroke();
+    ctx.globalAlpha=1;ctx.lineWidth=1;}
+   else if(f.type==="pralaya"){ctx.globalAlpha=Math.sin(u*Math.PI)*.85;
+    ctx.fillStyle="#efe6d8";ctx.fillRect(0,0,CW,CH);ctx.globalAlpha=1;}}
+ }
+ requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+
+/* ---------------- SSE ---------------- */
+function applySnap(s){
+ const first=!S;S=s;
+ $("c-year").textContent=s.y;
+ $("c-agename").textContent=META?META.theme.ages[s.ageIdx]:"—";
+ $("c-agedot").style.background=AGDOT[s.ageIdx];
+ $("k-pop").textContent=s.pop;$("k-lib").textContent=s.lib;
+ $("k-virt").textContent=s.virt.toFixed(2);
+ $("k-eff").textContent=Math.round(s.eff*100)+"%";
+ $("k-doct").textContent=Math.round(s.doct*100)+"%";
+ $("btn-play").textContent=s.playing?"❚❚":"▶";
+ // souls
+ const seen=new Set();
+ for(const[pid,x,y,k]of s.souls){seen.add(pid);
+  const ex=P.get(pid);
+  if(ex){ex.tx=x;ex.ty=y;ex.k=k;}
+  else{P.set(pid,{x,y,tx:x,ty:y,k});if(!first)fx("birth",x,y);}}
+ for(const pid of[...P.keys()])if(!seen.has(pid)){P.delete(pid);if(SEL===pid)SEL=null;}
+ // liberated -> stars
+ while(libSeen<s.lib){libSeen++;
+  const x=60+Math.random()*(CW-120),y=18+Math.random()*46;
+  SKYSTARS.push([x,y]);if(SKYSTARS.length>400)SKYSTARS.shift();
+  if(!first)fx("moksha",200+Math.random()*600,GROUND_Y-40);}
+ if(first)libSeen=s.lib;
+ // chronicle
+ for(const e of s.chron){
+  if(e.k==="pralaya"){fx("pralaya",0,0);toast(e.t);}
+  if(e.k==="avatar"){const pl=META?META.theme.places[0]:{x:500,y:300};
+   fx("avatar",300+Math.random()*400,GROUND_Y-60);toast(e.t);}
+  if(e.k==="moksha")toast(e.t);
+  const div=document.createElement("div");div.className="ev k-"+e.k;
+  div.innerHTML=`<span class="y">${e.y}</span><span class="t">${e.t}</span>`;
+  const c=$("chron");c.prepend(div);
+  while(c.children.length>34)c.removeChild(c.lastChild);}
+ $("c-foot").textContent=`the REAL engine · myths ${s.myths} · avatars walking ${s.avat} · `+
+  `pre-human strata below, the liberated as stars above · ${s.yps} yr/s`;
+}
+fetch("/meta").then(r=>r.json()).then(m=>{META=m;
+ $("c-name").textContent=m.theme.world;
+ $("k-lib-l").textContent=m.theme.libLabel;});
+const es=new EventSource("/events");
+es.onmessage=e=>applySnap(JSON.parse(e.data));
+
+/* ---------------- commands ---------------- */
+const cmd=b=>fetch("/cmd",{method:"POST",headers:{"Content-Type":"application/json"},
+ body:JSON.stringify(b)}).then(r=>r.json());
+$("btn-play").onclick=()=>cmd({op:S&&S.playing?"pause":"play"});
+const YPS=[1,4,16];let ypsI=1;
+$("btn-speed").onclick=()=>{ypsI=(ypsI+1)%YPS.length;
+ $("btn-speed").textContent=YPS[ypsI]+"×";cmd({op:"speed",yps:YPS[ypsI]});};
+$("d-avatar").onclick=()=>cmd({op:"avatar"}).then(r=>{if(!r.ok)toast("No liberated soul is willing yet");});
+$("d-pralaya").onclick=()=>cmd({op:"pralaya"});
+function arm(kind,btn){ARMED=ARMED===kind?null:kind;
+ document.querySelectorAll(".divine button").forEach(b=>b.classList.remove("armed"));
+ if(ARMED){btn.classList.add("armed");$("pill-armed").style.display="inline";}
+ else $("pill-armed").style.display="none";}
+$("d-miracle").onclick=e=>arm("miracle",e.target);
+$("d-calamity").onclick=e=>arm("calamity",e.target);
+$("d-tempt").oninput=()=>{const v=Number($("d-tempt").value);
+ $("v-tempt").textContent=(v>=0?"+":"")+v.toFixed(2);cmd({op:"tempt",v});};
+cv.addEventListener("click",e=>{
+ const r=cv.getBoundingClientRect();
+ const x=(e.clientX-r.left)*CW/r.width,y=(e.clientY-r.top)*CH/r.height;
+ if(ARMED){fx(ARMED,x,y);cmd({op:ARMED,x,y,r:130});
+  arm(null,{classList:{add(){},remove(){}}});
+  document.querySelectorAll(".divine button").forEach(b=>b.classList.remove("armed"));
+  $("pill-armed").style.display="none";return;}
+ let best=null,bd=15*15;
+ for(const[pid,s]of P){const d=(s.x-x)**2+(s.y-y)**2;if(d<bd){bd=d;best=pid;}}
+ SEL=best;renderInspector();});
+function renderInspector(){
+ const b=$("insp-body"),em=$("insp-empty");
+ if(SEL==null){b.innerHTML="";em.style.display="block";return;}
+ em.style.display="none";
+ fetch("/soul?pid="+SEL).then(r=>r.json()).then(d=>{
+  if(!d.ok){b.innerHTML="<p class='sub'>gone between lives…</p>";return;}
+  const mv=Object.values(d.virtues).reduce((a,v)=>a+v,0)/7;
+  const worstVice=Object.entries(d.vices).sort((a,b2)=>b2[1]-a[1])[0];
+  const bar=(l,v,c)=>`<span class="lab">${l}</span><div class="track"><div class="fill" style="width:${clamp(v)*100}%;background:${c}"></div></div><span class="val">${v.toFixed(2)}</span>`;
+  const timeline=(d.history||[]).slice().reverse().map(h=>
+   `<div class="ev"><span class="y">L${h.n}</span><span class="t">${h.role}, ${h.years}y · virtue ${h.dv>=0?"+":""}${h.dv.toFixed(2)} · ${h.enemy}</span></div>`).join("");
+  b.innerHTML=`<div class="nm" style="color:${d.avatar?"var(--gold)":"var(--ink)"}">${d.name}${d.avatar?" · avatar":""}</div>
+   <div class="st">life ${d.lives} · age ${d.age} · ruling enemy: ${worstVice[0]} (${worstVice[1].toFixed(2)})</div>
+   <div class="bars">${bar("virtue",mv,"var(--good)")}${bar("buddhi",Math.min(1,d.buddhi/0.6),"var(--violet)")}
+   ${bar("compulsion",d.compulsion,"var(--bad)")}${bar("sattva",d.gunas[0],"var(--gold)")}</div>
+   <div class="st" style="white-space:normal;line-height:1.45;margin-top:8px">${d.bio||""}</div>
+   ${timeline?`<div style="margin-top:6px"><label>soul timeline</label>${timeline}</div>`:""}
+   <div style="margin-top:9px"><button id="btn-bless">✦ bless this soul</button></div>`;
+  $("btn-bless").onclick=()=>cmd({op:"bless",pid:SEL}).then(()=>renderInspector());});}
+setInterval(()=>{if(SEL!=null)renderInspector();},2500);
+document.addEventListener("keydown",e=>{
+ if(e.code==="Space"&&e.target.tagName!=="INPUT"){e.preventDefault();$("btn-play").click();}});
+})();
+</script></body></html>

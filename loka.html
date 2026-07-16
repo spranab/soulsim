@@ -1,0 +1,721 @@
+<title>Loka — build a living world</title>
+<style>
+:root { color-scheme: dark;
+  --bg:#0b0d16; --s1:#141724; --s2:#1b1f30; --border:#272c42; --bstrong:#3a4160;
+  --ink:#eef0fa; --sec:#aab0cc; --muted:#767d9e;
+  --accent:#e8863a; --accent-soft:rgba(232,134,58,.14);
+  --good:#57c785; --bad:#e56b6b; --blue:#5b9ce6; --violet:#a08ef0; --gold:#e6c35a;
+  --h1c:#e56b6b; --h2c:#5b9ce6; --h3c:#57c785; --h4c:#e6c35a;
+  --disp:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,ui-serif,serif;
+  --body:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace; }
+/* This artifact commits to a single nocturnal look — a lit world glows against dark. */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px 60px}
+button{font-family:var(--mono);cursor:pointer;background:var(--s2);color:var(--ink);
+  border:1px solid var(--bstrong);border-radius:8px;padding:7px 12px;font-size:.8rem}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:#14100a;border-color:var(--accent);font-weight:600}
+button.big{font-size:1rem;padding:12px 26px;border-radius:10px}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.armed{background:var(--violet);color:#14100a;border-color:var(--violet)}
+input[type=text]{background:var(--s1);border:1px solid var(--bstrong);border-radius:8px;
+  color:var(--ink);font-family:var(--body);padding:8px 11px;font-size:.95rem;width:100%}
+input[type=range]{accent-color:var(--accent);width:100%}
+label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
+.card{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:14px 16px}
+h1{font-family:var(--disp);font-weight:600;margin:0}
+h2{font-family:var(--disp);font-weight:600;font-size:1.02rem;margin:0 0 4px}
+.sub{color:var(--muted);font-size:.76rem;margin:0 0 10px}
+
+/* ---------- FOUNDRY ---------- */
+#foundry header{padding:48px 0 24px}
+#foundry .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+#foundry h1{font-size:clamp(2.1rem,4.6vw,3rem);line-height:1.05}
+#foundry h1 .em{font-style:italic;color:var(--accent)}
+#foundry .thesis{color:var(--sec);max-width:64ch;margin:14px 0 0}
+.presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:20px 0}
+.preset{border:2px solid var(--border);border-radius:13px;padding:14px 16px;cursor:pointer;background:var(--s1)}
+.preset:hover{border-color:var(--bstrong)}
+.preset.sel{border-color:var(--accent);background:var(--accent-soft)}
+.preset h3{font-family:var(--disp);margin:0 0 4px;font-size:1.1rem}
+.preset p{margin:0;font-size:.78rem;color:var(--sec)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.field{margin-bottom:11px}
+.slider .val{float:right;font-family:var(--mono);font-size:.7rem;color:var(--accent)}
+.houses-edit input{margin-bottom:6px}
+#ignite{margin-top:18px;text-align:center}
+
+/* ---------- WORLD ---------- */
+#worldui{display:none}
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--border);margin:0 -16px;padding:8px 16px}
+.topin{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.wname{font-family:var(--disp);font-weight:600;font-size:1rem}
+.yearbox{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:1.25rem;font-weight:700;min-width:78px}
+.yearbox small{display:block;font-size:.54rem;font-weight:400;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.agechip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.74rem;
+  padding:4px 11px;border:1px solid var(--bstrong);border-radius:999px;white-space:nowrap}
+.agechip .dot{width:9px;height:9px;border-radius:50%}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;margin-top:12px}
+@media(max-width:960px){.stage{grid-template-columns:1fr}}
+#canvasbox{position:relative;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#05060c}
+canvas{display:block;width:100%;height:auto;cursor:crosshair}
+.hud{position:absolute;left:10px;bottom:10px;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+.hudhouse{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.66rem;
+  background:rgba(5,6,12,.55);border-radius:999px;padding:2px 10px 2px 6px;backdrop-filter:blur(4px)}
+.hudhouse .sw{width:8px;height:8px;border-radius:50%}
+.hudhouse b{font-variant-numeric:tabular-nums;margin-left:auto}
+.kpirow{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.pill{font-family:var(--mono);font-size:.66rem;background:rgba(5,6,12,.55);backdrop-filter:blur(4px);
+  border-radius:999px;padding:3px 11px;color:var(--sec)}
+.pill b{color:var(--ink);font-variant-numeric:tabular-nums}
+.pill b.flame{color:var(--accent)}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:52px;font-family:var(--disp);
+  font-size:1rem;color:var(--gold);text-shadow:0 2px 14px rgba(0,0,0,.8);opacity:0;transition:opacity .5s;pointer-events:none;font-style:italic}
+.toast.on{opacity:1}
+.rail .card{margin-bottom:10px}
+.divine{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.divine button{width:100%}
+.liveknob{margin-top:9px}
+.liveknob .val{float:right;font-family:var(--mono);font-size:.68rem;color:var(--accent)}
+#inspector .nm{font-family:var(--disp);font-weight:600;font-size:1.05rem}
+#inspector .tag{font-size:.68rem;font-style:italic;color:var(--accent);margin-left:6px}
+#inspector .st{font-family:var(--mono);font-size:.68rem;color:var(--sec);margin:3px 0 8px}
+.bars{display:grid;grid-template-columns:72px 1fr 32px;gap:5px 8px;align-items:center;font-family:var(--mono);font-size:.64rem}
+.bars .lab{color:var(--muted)} .bars .val{text-align:right;color:var(--sec)}
+.track{height:5px;background:var(--s2);border-radius:3px;overflow:hidden}
+.fill{height:100%;border-radius:3px}
+.chron{max-height:230px;overflow-y:auto}
+.ev{display:flex;gap:7px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.72rem;align-items:baseline}
+.ev .y{font-family:var(--mono);color:var(--muted);flex:none;width:40px;font-variant-numeric:tabular-nums}
+.ev .t{color:var(--sec)}
+.ev.k-avatar .t{color:var(--violet)} .ev.k-moksha .t{color:var(--gold)}
+.ev.k-pralaya .t{color:var(--accent)} .ev.k-myth .t{color:var(--blue)} .ev.k-doom .t{color:var(--bad)}
+footer{margin-top:8px;color:var(--muted);font-size:.7rem;font-family:var(--mono)}
+</style>
+
+<!-- ================= FOUNDRY ================= -->
+<div class="wrap" id="foundry">
+<header>
+  <p class="kicker">loka · the world foundry</p>
+  <h1>Build a <span class="em">living</span> world</h1>
+  <p class="thesis">Not a film. A place: buildings with lit windows, souls as wandering
+  lights, ascensions you can watch. The soulsim engine runs underneath — chariot, karma,
+  guṇas, mokṣa, myth — and your hand reaches directly into the map.</p>
+</header>
+<div class="presets" id="presets"></div>
+<div class="grid2">
+  <div class="card">
+    <h2>The world</h2>
+    <p class="sub">Names are the theme's; change any of them.</p>
+    <div class="field"><label>World name</label><input type="text" id="f-name"></div>
+    <div class="field houses-edit"><label>Four houses</label>
+      <input type="text" id="f-h0"><input type="text" id="f-h1">
+      <input type="text" id="f-h2"><input type="text" id="f-h3"></div>
+  </div>
+  <div class="card">
+    <h2>The physics</h2>
+    <p class="sub">Each slider is a real hypothesis.</p>
+    <div class="field slider"><label>Souls in the cosmos <span class="val" id="v-souls">600</span></label>
+      <input type="range" id="f-souls" min="200" max="1200" step="50" value="600"></div>
+    <div class="field slider"><label>Does hardship refine or damage? <span class="val" id="v-adv">1.0</span></label>
+      <input type="range" id="f-adv" min="0.2" max="2.0" step="0.1" value="1.0"></div>
+    <div class="field slider"><label>How hard does vice cascade? <span class="val" id="v-casc">1.0</span></label>
+      <input type="range" id="f-casc" min="0" max="2.5" step="0.1" value="1.0"></div>
+    <div class="field slider"><label>Years per great cycle <span class="val" id="v-cycle">400</span></label>
+      <input type="range" id="f-cycle" min="200" max="800" step="50" value="400"></div>
+  </div>
+</div>
+<div id="ignite"><button class="primary big" id="btn-ignite">✦ Ignite the world</button></div>
+</div>
+
+<!-- ================= WORLD ================= -->
+<div class="wrap" id="worldui">
+<div class="topbar"><div class="topin">
+  <span class="wname" id="c-name">—</span>
+  <div class="yearbox"><small>year · cycle <span id="c-cc">1</span></small><span id="c-year">0</span></div>
+  <span class="agechip"><span class="dot" id="c-agedot"></span><span id="c-agename">—</span></span>
+  <button class="primary" id="btn-play">❚❚</button>
+  <button id="btn-speed">4×</button>
+  <button id="btn-rebuild" style="margin-left:auto">⟲ new world</button>
+</div></div>
+
+<div class="stage">
+  <div id="canvasbox">
+    <canvas id="world" width="1000" height="580" aria-label="the living world"></canvas>
+    <div class="kpirow">
+      <span class="pill">alive <b id="k-pop">—</b></span>
+      <span class="pill"><span id="k-lib-l">beyond</span> <b class="flame" id="k-lib">—</b></span>
+      <span class="pill">virtue <b id="k-virt">—</b></span>
+      <span class="pill">doctrine <b id="k-doct">—</b></span>
+      <span class="pill" id="pill-armed" style="display:none;color:var(--violet)">click the map…</span>
+    </div>
+    <div class="hud" id="hud"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+  <div class="rail">
+    <div class="card">
+      <h2>The hand of god</h2>
+      <div class="divine">
+        <button id="d-avatar">☸ avatar</button>
+        <button id="d-pralaya">☾ pralaya</button>
+        <button id="d-miracle">✦ miracle</button>
+        <button id="d-calamity">⚡ calamity</button>
+      </div>
+      <div class="liveknob"><label>Temptation of the age <span class="val" id="v-tempt">+0.00</span></label>
+        <input type="range" id="d-tempt" min="-0.4" max="0.4" step="0.05" value="0"></div>
+      <p class="sub" style="margin:8px 0 0">Miracle and calamity arm your hand — then touch the map. Click any light to know its soul.</p>
+    </div>
+    <div class="card" id="inspector"><h2>Inspector</h2>
+      <p class="sub" id="insp-empty">Click a soul or a place.</p><div id="insp-body"></div></div>
+    <div class="card"><h2>Chronicle</h2><div class="chron" id="chron"></div></div>
+  </div>
+</div>
+<footer id="c-foot"></footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+const $=(id)=>document.getElementById(id);
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let rand=mulberry32(42); const R=()=>rand();
+const pick=a=>a[Math.floor(R()*a.length)];
+const gauss=(m,s)=>{let u=0,v=0;while(!u)u=R();while(!v)v=R();
+  return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const clamp=(x,lo=0,hi=1)=>x<lo?lo:x>hi?hi:x;
+
+/* ---------------- themes + spatial layouts (canvas space 1000x580) ------- */
+const THEMES={
+ academy:{label:"The Magic Academy",desc:"A castle school of the veiled arts. Houses compete; some students pass beyond the Veil.",
+  world:"Thornspire Academy",
+  ages:["Age of Wonder","Age of Study","Age of Rivalry","Age of Shadows"],
+  houses:["Emberwing","Moonshade","Thornhall","Briarwynd"],
+  places:[{n:"Whispering Library",x:175,y:330,k:"dome"},{n:"the Undercroft",x:470,y:470,k:"arch"},
+          {n:"Astronomy Spire",x:830,y:210,k:"tower"},{n:"Great Refectory",x:490,y:290,k:"hall"},
+          {n:"Mirror Gallery",x:300,y:170,k:"gallery"},{n:"Forbidden Greenhouse",x:720,y:420,k:"glass"}],
+  names:["Elara","Corvin","Maeve","Ondine","Basil","Wren","Isolde","Fen","Aurelia","Dorian","Sable","Petra","Lucan","Briar","Nyx","Alder","Seren","Idris","Thessa","Rowan"],
+  mokshaWord:"passes beyond the Veil",libLabel:"beyond the veil",
+  avatarText:"An old Headmaster returns to walk the halls",
+  pralayaText:"The Castle sleeps. When it wakes, a new founding begins",
+  mythW:["Codex","Ballad","Whisper","Testament","Rune","Hymn"],
+  sky:["#0a0d1f","#182448"],ground:"#0e1526",star:!0},
+ bharat:{label:"Bharatavarsha",desc:"The classical cosmos: clans by the river, yugas turning, mokṣa for the rare few.",
+  world:"Bharatavarsha",
+  ages:["Satya","Treta","Dvapara","Kali"],
+  houses:["Suryavansha","Chandravansha","Agnivansha","Nagavansha"],
+  places:[{n:"the river ghat",x:200,y:430,k:"steps"},{n:"the banyan court",x:430,y:300,k:"tree"},
+          {n:"the mountain ashram",x:840,y:170,k:"hut"},{n:"the spice bazaar",x:600,y:430,k:"stalls"},
+          {n:"the temple tank",x:320,y:200,k:"pool"},{n:"the burning ground",x:790,y:460,k:"pyre"}],
+  names:["Aruni","Kavya","Bodhi","Tara","Ishan","Mira","Dev","Lila","Ravi","Anaya","Karan","Ved","Asha","Nila","Jai","Uma","Arjun","Diya"],
+  mokshaWord:"attains mokṣa",libLabel:"liberated",
+  avatarText:"Dharma has fallen; a liberated one descends",
+  pralayaText:"Pralaya: the world dissolves; a new Satya dawns",
+  mythW:["Song","Sutra","Gatha","Hymn","Purana","Shloka"],
+  sky:["#1a1030","#4a2440"],ground:"#141024",star:!0},
+ station:{label:"The Station",desc:"A generation ship of crews and cryo-souls, cycling through eras of light and blackout.",
+  world:"Ashvale Station",
+  ages:["Founding Era","Expansion Era","Scarcity Era","Blackout Era"],
+  houses:["Helios Crew","Vega Crew","Cinder Crew","Aurora Crew"],
+  places:[{n:"hydroponics bay",x:180,y:250,k:"glass"},{n:"the reactor deck",x:430,y:430,k:"module"},
+          {n:"observation dome",x:850,y:200,k:"dome"},{n:"the cargo spine",x:620,y:320,k:"module"},
+          {n:"the cryo vaults",x:300,y:440,k:"arch"},{n:"the long corridor",x:520,y:180,k:"gallery"}],
+  names:["Juno","Cassian","Vex","Orla","Dane","Echo","Marlow","Zia","Callis","Nova","Reyes","Sol","Indra","Kite","Lark","Moss"],
+  mokshaWord:"achieves clarity and leaves the cycle",libLabel:"ascended",
+  avatarText:"A departed founder re-boards the station",
+  pralayaText:"Full reset: the station reboots into a new founding era",
+  mythW:["Log","Protocol","Signal","Litany","Archive","Chant"],
+  sky:["#05070d","#0c1526"],ground:"#0a0f1a",star:!0},
+};
+const AGES=[{h:.35,t:.10,m:.10,g:[.62,.23,.15],dot:"var(--blue)",amb:1.0},
+            {h:.55,t:.30,m:.30,g:[.48,.32,.20],dot:"var(--good)",amb:.85},
+            {h:.75,t:.55,m:.55,g:[.34,.40,.26],dot:"var(--gold)",amb:.65},
+            {h:1.0,t:.85,m:.85,g:[.20,.45,.35],dot:"var(--bad)",amb:.42}];
+const AGE_FR=[.4,.3,.2,.1];
+const HC=["#e56b6b","#5b9ce6","#57c785","#e6c35a"];
+const VIRTUES=["compassion","discernment","truth","courage","humility","nonattach","unity"];
+const VICES=["kama","krodha","lobha","moha","mada","matsarya"];
+const CONDS=["power","scarcity","loss","success","uncertainty"];
+const EVT={power:{v:["humility","compassion"],x:["mada","krodha"],s:.7,t:(n,p)=>`${n} was given charge of ${p}`},
+ scarcity:{v:["compassion","courage"],x:["lobha","kama"],s:.6,t:(n,p)=>`${n} found the stores of ${p} empty`},
+ loss:{v:["nonattach","compassion"],x:["moha","krodha"],s:.65,t:(n,p)=>`${n} lost someone dear at ${p}`},
+ success:{v:["humility","unity"],x:["mada","matsarya"],s:.55,t:(n,p)=>`${n} won glory at ${p}`},
+ uncertainty:{v:["truth","discernment"],x:["krodha","moha"],s:.6,t:(n,p)=>`${n} heard lies swirling through ${p}`}};
+const OUTCOME={veto_won:"— and mastered the impulse",effortless:"— and it left no mark on them",
+ akrasia:"— and knew better, yet gave in",unseen:"— and never saw what it made of them"};
+const TRUTHS={rebirth:true,ages_cycle:true,dawn_returns:true,liberation:true,effort_frees:true,
+ habit_binds:true,helpers_descend:true,vice_cascades:true,world_ends_forever:false,
+ fate_is_random:false,only_one_life:false,power_frees:false};
+const TPROPS=Object.keys(TRUTHS);
+
+/* ---------------- engine ---------------- */
+let W=null;
+function newSoul(sub){const s={};
+ VIRTUES.forEach(v=>s[v]=clamp(gauss(.42,.12)));s.unity=clamp(gauss(.10,.06));
+ VICES.forEach(x=>s[x]=clamp(gauss(.52,.12)));
+ s.rob={};CONDS.forEach(c=>s.rob[c]=clamp(gauss(.18,.05)));
+ s.tested={};CONDS.forEach(c=>s.tested[c]=0);
+ s.buddhi=clamp(gauss(.15,.05),.02,.5);s.g=[.30,.50,.20];s.hab={};s.comp=.5;
+ s.lives=0;s.moksha=false;s.alive=false;s.age=0;s.fatigue=0;s.house=-1;s.name=null;s.isAvatar=false;
+ s.x=0;s.y=0;s.tx=0;s.ty=0;s.place=0;s.dwell=0;
+ if(sub&&sub.n>0){const w=.2;
+  VIRTUES.forEach(v=>s[v]=clamp((1-w)*s[v]+w*sub.v[v]/sub.n));
+  VICES.forEach(x=>s[x]=clamp((1-w)*s[x]+w*sub.x[x]/sub.n));}
+ return s;}
+const meanV=s=>VIRTUES.reduce((a,v)=>a+s[v],0)/VIRTUES.length;
+function place(i){return W.cfg.places[i];}
+function sendTo(s,pi){const p=place(pi);s.place=pi;
+ s.tx=p.x+gauss(0,26);s.ty=p.y+14+gauss(0,13);s.dwell=2+R()*6;}
+function birth(age=0){if(!W.pool.length)return null;
+ let best=null,bs=-1;
+ for(let t=0;t<6;t++){const c=W.pool[Math.floor(R()*W.pool.length)];
+  const load=(1-meanV(c))+VICES.reduce((a,x)=>a+c[x],0)/VICES.length;
+  const sc=load+R()*.4;if(sc>bs){bs=sc;best=c;}}
+ const s=best;W.pool.splice(W.pool.indexOf(s),1);
+ s.alive=true;s.age=age;s.fatigue=0;s.house=Math.floor(R()*4);
+ s.name=pick(W.cfg.names);s.isAvatar=false;
+ const hb=W.cfg.houseBias[s.house];if(hb){s[hb.v]=clamp(s[hb.v]+.06);s[hb.x]=clamp(s[hb.x]+.05);}
+ const pi=Math.floor(R()*W.cfg.places.length);const p=place(pi);
+ s.x=p.x+gauss(0,26);s.y=p.y+14+gauss(0,13);sendTo(s,pi);
+ fx("birth",s.x,s.y);return s;}
+function die(s,quiet){s.alive=false;s.lives++;
+ Object.keys(s.hab).forEach(k=>{s.hab[k]*=.4;if(s.hab[k]<.02)delete s.hab[k];});
+ VICES.forEach(x=>s[x]=clamp(s[x]*.93));
+ s.comp=clamp(.7*s.comp+.3*.5);
+ if(s.isAvatar){W.returnable.push(s);return;}
+ const okV=Math.min(...VIRTUES.map(v=>s[v]))>=.85;
+ const okX=Math.max(...VICES.map(x=>s[x]))<=.16;
+ const okR=Math.min(...CONDS.map(c=>s.rob[c]))>=.72;
+ const okT=CONDS.every(c=>s.tested[c]>=3);
+ const okC=s.comp<=.22;
+ if(okV&&okX&&okR&&okT&&okC){
+  s.moksha=true;W.liberated.push(s);W.returnable.push(s);
+  W.sub.n++;VIRTUES.forEach(v=>W.sub.v[v]+=s[v]);VICES.forEach(x=>W.sub.x[x]+=s[x]);
+  W.houses[s.house].libs++;
+  note("moksha",`${s.name} of ${W.houses[s.house].name} ${W.cfg.mokshaWord}, after ${s.lives} lives`);
+  toast(`${s.name} ${W.cfg.mokshaWord}`);
+  fx("moksha",s.x,s.y,HC[s.house]);
+ } else {W.pool.push(s);if(!quiet)fx("death",s.x,s.y);}}
+function ageOf(y){const L=W.cfg.cycle,yy=y%L;let a=0;
+ for(let i=0;i<4;i++){a+=AGE_FR[i]*L;if(yy<a)return i;}return 3;}
+function note(k,t){W.chron.push({y:W.year,k,t});}
+function chooseAndLearn(s,ageP,hyp){
+ const cond=pick(CONDS),E=EVT[cond];
+ const tempt=clamp(ageP.t+W.tempt,0,1);
+ const acts=[1,.3,-.3,-1],keys=["aligned","comp","avoid","unaligned"];
+ let bi=0,bs=-1e9;
+ for(let i=0;i<4;i++){const al=acts[i];let drive;
+  if(al>0)drive=(s[E.v[0]]+.8*s[E.v[1]])*(al===1?1.15:.55);
+  else drive=(s[E.x[0]]+.6*s[E.x[1]])*(al===-1?1.15:.8);
+  const groove=(s.hab[cond+":"+keys[i]]||0)*.8*(1+s.g[2]);
+  const tp=tempt*Math.max(0,-al)*(1+s.g[1]);
+  const sc=drive+groove+tp+gauss(0,.17);
+  if(sc>bs){bs=sc;bi=i;}}
+ const domAl=acts[bi];let al=domAl,kind;
+ const vetoNeeded=domAl<1;
+ const blind=.55*ageP.m;
+ const aware=clamp(.10+.45*s.discernment+.25*s.unity+.20*.7)*(.4+.9*s.g[0])*(1-blind);
+ const noticed=R()<clamp(aware,.02,.98);
+ if(!vetoNeeded)kind="effortless";
+ else if(!noticed)kind="unseen";
+ else if(s.fatigue>=1)kind="akrasia";
+ else{s.fatigue=Math.min(1,s.fatigue+.15);
+  const bp=clamp(.6*s.buddhi+.25*s.unity+.15*.85);
+  const contest=bp-(s.hab[cond+":"+keys[bi]]||0)*.8-.35*s.g[1]+.30*s.g[0];
+  if(R()<1/(1+Math.exp(-3*contest))){kind="veto_won";al=1;}else kind="akrasia";}
+ s.comp=clamp(.9*s.comp+.1*(vetoNeeded?1:0));
+ const diff=clamp(E.s*ageP.h);
+ let integ=.3*Math.max(0,al)+.25*diff+.25*aware+.2*(1-s.comp);
+ const hkey=cond+":"+(al===1?"aligned":keys[bi]);
+ if(kind==="veto_won"){integ*=2.0;s.buddhi=clamp(s.buddhi+.03*(.5+diff));
+  s.hab[hkey]=clamp((s.hab[hkey]||0)+.12,0,1.5);s.g[0]+=.015;}
+ else if(kind==="akrasia"){s.buddhi=clamp(s.buddhi-.01*(1+(s.hab[hkey]||0)));
+  s.hab[hkey]=clamp((s.hab[hkey]||0)+.11,0,1.5);s.g[1]+=.01;integ*=.6;}
+ else if(kind==="unseen"){s.hab[hkey]=clamp((s.hab[hkey]||0)+.10,0,1.5);s.g[2]+=.008;integ*=.5;}
+ else{s.hab[hkey]=clamp((s.hab[hkey]||0)+.06,0,1.5);s.g[0]+=.008;}
+ const rate=.06;
+ E.v.forEach(v=>s[v]=clamp(s[v]+rate*al*integ));
+ E.x.forEach(x=>s[x]=clamp(s[x]-rate*al*integ));
+ if(al>0)s.rob[cond]=clamp(s.rob[cond]+rate*al*diff*hyp.adv*(kind==="veto_won"?1.5:1));
+ else s.rob[cond]=clamp(s.rob[cond]+rate*al*diff);
+ if(al<0){const c=hyp.casc*diff;
+  if(s.kama>.5)s.krodha=clamp(s.krodha+.04*c*(s.kama-.5));
+  if(s.krodha>.55)s.moha=clamp(s.moha+.05*c*(s.krodha-.55));
+  if(s.moha>.6){s.discernment=clamp(s.discernment-.04*c*(s.moha-.6));
+   s.buddhi=clamp(s.buddhi-.05*c*(s.moha-.6));s.g[2]+=.02*c;}}
+ s.tested[cond]++;
+ const gs=s.g[0]+s.g[1]+s.g[2];s.g=s.g.map(x=>x/gs);
+ return{cond,kind,al,E};}
+function acc(m){const ks=Object.keys(m.props);if(!ks.length)return 0;
+ return ks.filter(p=>m.props[p]===TRUTHS[p]).length/ks.length;}
+function doctrine(){const t=W.myths.reduce((a,m)=>a+m.str,0);if(!t)return 0;
+ return W.myths.reduce((a,m)=>a+acc(m)*m.str,0)/t;}
+function religionStep(ageP){
+ const alive=W.souls.filter(s=>s.alive&&!s.isAvatar);
+ for(const s of alive){const cl=Math.min(1,.45*s.unity+.35*s.g[0]+.20*s.buddhi);
+  if(R()<.004*cl){const props={};const n=2+Math.floor(R()*3);
+   for(let i=0;i<n;i++){const p=pick(TPROPS);props[p]=R()<(.35+.6*cl)?TRUTHS[p]:!TRUTHS[p];}
+   const nm=`The ${pick(W.cfg.mythW)} of ${place(s.place).n.replace(/^the /,"")}`;
+   W.myths.push({name:nm,props,str:5,inst:false});
+   if(R()<.15)note("myth",`A new teaching arises at ${place(s.place).n}: '${nm}'`);}}
+ const pop=Math.max(alive.length,1);
+ const total=W.myths.reduce((a,m)=>a+m.str,0);
+ const room=Math.max(0,1-total/(0.8*pop+1));
+ for(const m of W.myths){
+  m.str+=.10*(m.inst?1.6:1)*m.str*room;m.str*=.985;
+  let pm=.25*(.4+1.2*ageP.m);if(m.inst)pm*=.15;
+  const ks=Object.keys(m.props);
+  if(R()<pm&&ks.length){const p=pick(ks);if(R()<.6)m.props[p]=!m.props[p];else delete m.props[p];}
+  if(!m.inst&&m.str>.12*pop){m.inst=true;
+   note("myth",`'${m.name}' becomes an institution (${Math.round(acc(m)*100)}% true)`);}
+  if(m.inst&&ageP.m>.5&&R()<.02*ageP.m&&ks.length){
+   const tp=ks.filter(p=>m.props[p]===TRUTHS[p]);
+   if(tp.length){const p=pick(tp);m.props[p]=!m.props[p];
+    note("doom",`The canon of '${m.name}' is corrupted`);}}}
+ W.myths=W.myths.filter(m=>m.str>=1&&Object.keys(m.props).length)
+  .sort((a,b)=>b.str-a.str).slice(0,120);}
+function descend(manual){const s=W.returnable.pop();if(!s)return false;
+ s.alive=true;s.isAvatar=true;s.age=25;s.fatigue=0;
+ s.house=Math.floor(R()*4);s.name=pick(W.cfg.names);
+ const pi=Math.floor(R()*W.cfg.places.length);const p=place(pi);
+ s.x=p.x;s.y=p.y-160;sendTo(s,pi);
+ fx("avatar",p.x,p.y);
+ note("avatar",manual?`Your hand opens: ${W.cfg.avatarText.toLowerCase()}`:W.cfg.avatarText);
+ toast(W.cfg.avatarText);return true;}
+function pralaya(manual){
+ for(const s of W.souls){if(!s.alive)continue;s.alive=false;
+  if(s.isAvatar){s.isAvatar=false;W.returnable.push(s);continue;}
+  s.lives++;W.pool.push(s);}
+ for(const s of W.souls){if(s.moksha)continue;
+  Object.keys(s.hab).forEach(k=>{s.hab[k]*=.1;if(s.hab[k]<.02)delete s.hab[k];});
+  s.g=[.55,.27,.18];}
+ const n0=Math.min(Math.floor(W.cfg.souls*.25),200);
+ for(let i=0;i<n0;i++)birth(16+Math.floor(R()*25));
+ note("pralaya",manual?`You close your hand: ${W.cfg.pralayaText.toLowerCase()}`:W.cfg.pralayaText);
+ toast(W.cfg.pralayaText);
+ fx("pralaya",500,290);}
+function tick(){
+ W.year++;
+ const L=W.cfg.cycle,cc=Math.floor(W.year/L);
+ if(cc!==W.cc){W.cc=cc;pralaya(false);}
+ const ai=ageOf(W.year),ageP=AGES[ai];
+ const hyp={adv:W.cfg.adv,casc:W.cfg.casc};
+ const alive=W.souls.filter(s=>s.alive);
+ for(const s of alive){s.fatigue=Math.max(0,s.fatigue*.5);
+  for(let i=0;i<3;i++)s.g[i]+=.04*(ageP.g[i]-s.g[i]);
+  const gs=s.g[0]+s.g[1]+s.g[2];s.g=s.g.map(x=>x/gs);}
+ const avWalking=alive.filter(s=>s.isAvatar).length;
+ const eff=avWalking?{h:ageP.h,t:ageP.t*.45,m:ageP.m*.45,g:ageP.g}:ageP;
+ let flavorDone=false,coopN=0,coopA=0;
+ for(const s of alive){
+  s.age++;
+  const mort=.005+Math.pow(s.age/78,7)*.2;
+  if(s.age>105||R()<mort){die(s);continue;}
+  if(s.age<16)continue;
+  const n=1+(R()<.25?1:0);
+  for(let e=0;e<n;e++){
+   if(s.isAvatar){coopN++;coopA++;continue;}
+   const r=chooseAndLearn(s,eff,hyp);
+   coopN++;if(r.al>0)coopA++;
+   if(r.kind==="veto_won"&&R()<.3)fx("spark",s.x,s.y,"#57c785");
+   if((r.kind==="unseen"||r.kind==="akrasia")&&r.al<0&&R()<.2)fx("spark",s.x,s.y,"#e56b6b");
+   if(!flavorDone&&R()<.10){flavorDone=true;
+    note("flavor",r.E.t(s.name+" of "+W.houses[s.house].name,place(s.place).n)+" "+OUTCOME[r.kind]);}}}
+ const cap=Math.floor(W.cfg.souls*.35);
+ const nowAlive=W.souls.filter(s=>s.alive).length;
+ const births=Math.min(Math.max(0,Math.floor((cap-nowAlive)*.08)+(R()<.5?1:0)),W.pool.length);
+ for(let i=0;i<births;i++)birth(0);
+ if(W.souls.length<W.cfg.souls*2&&R()<.5){const s=newSoul(W.sub);W.souls.push(s);W.pool.push(s);}
+ const coop=coopN?coopA/coopN:1;
+ if(coop<.55&&!avWalking&&W.returnable.length&&ageP.h>=.7)descend(false);
+ religionStep(eff);}
+function build(cfg){
+ rand=mulberry32(cfg.seed);
+ W={cfg,year:0,cc:0,souls:[],pool:[],liberated:[],returnable:[],
+  houses:cfg.houses.map((h,i)=>({name:h,color:HC[i],libs:0})),
+  myths:[],chron:[],chronSeen:0,tempt:0,
+  sub:{n:0,v:Object.fromEntries(VIRTUES.map(v=>[v,0])),x:Object.fromEntries(VICES.map(x=>[x,0]))}};
+ for(let i=0;i<cfg.souls;i++){const s=newSoul(null);W.souls.push(s);W.pool.push(s);}
+ const n0=Math.min(Math.floor(cfg.souls*.3),240);
+ for(let i=0;i<n0;i++)birth(16+Math.floor(R()*30));
+ note("myth",`${cfg.world} is founded; the first souls are sorted into their houses`);}
+
+/* ---------------- effects & toast ---------------- */
+let FX=[];
+function fx(type,x,y,color){FX.push({type,x,y,color,t:0});if(FX.length>140)FX.shift();}
+let toastTimer=null;
+function toast(t){const el=$("toast");el.textContent=t;el.classList.add("on");
+ clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("on"),3400);}
+
+/* ---------------- rendering ---------------- */
+const cv=$("world"),ctx=cv.getContext("2d");
+const CW=1000,CH=580;
+let stars=null;
+function makeStars(){stars=[];const r2=mulberry32(7);
+ for(let i=0;i<130;i++)stars.push([r2()*CW,r2()*CH*.55,r2()*1.3+.3,r2()]);}
+makeStars();
+function drawBuilding(p,glow){
+ const x=p.x,y=p.y;ctx.save();ctx.translate(x,y);
+ const win=(wx,wy,w,h)=>{ctx.fillStyle=`rgba(255,196,110,${.25+.65*glow})`;ctx.fillRect(wx,wy,w,h);};
+ ctx.fillStyle="#1a2135";ctx.strokeStyle="rgba(120,140,200,.25)";
+ const k=p.k;
+ if(k==="tower"){ctx.fillRect(-13,-95,26,95);
+  ctx.beginPath();ctx.moveTo(-17,-95);ctx.lineTo(0,-125);ctx.lineTo(17,-95);ctx.closePath();
+  ctx.fillStyle="#232c48";ctx.fill();
+  win(-6,-85,4,6);win(2,-66,4,6);win(-6,-46,4,6);win(2,-28,4,6);}
+ else if(k==="hall"){ctx.fillRect(-46,-44,92,44);
+  ctx.beginPath();ctx.moveTo(-52,-44);ctx.lineTo(0,-70);ctx.lineTo(52,-44);ctx.closePath();
+  ctx.fillStyle="#232c48";ctx.fill();
+  for(let i=-3;i<=3;i+=2)win(i*11-2,-32,5,9);}
+ else if(k==="gallery"){ctx.fillRect(-40,-30,80,30);
+  for(let i=-3;i<=3;i+=2)win(i*10-2,-22,5,12);}
+ else if(k==="dome"){ctx.beginPath();ctx.arc(0,-14,30,Math.PI,0);ctx.fill();
+  ctx.fillRect(-30,-14,60,14);win(-14,-10,6,8);win(8,-10,6,8);
+  ctx.beginPath();ctx.arc(0,-44,3,0,7);ctx.fillStyle=`rgba(255,220,140,${glow})`;ctx.fill();}
+ else if(k==="glass"){ctx.globalAlpha=.8;
+  ctx.beginPath();ctx.moveTo(-34,0);ctx.lineTo(0,-46);ctx.lineTo(34,0);ctx.closePath();
+  ctx.fillStyle=`rgba(140,220,190,${.14+.24*glow})`;ctx.fill();ctx.stroke();ctx.globalAlpha=1;}
+ else if(k==="arch"){ctx.beginPath();ctx.moveTo(-30,0);ctx.lineTo(-30,-22);
+  ctx.arc(0,-22,30,Math.PI,0);ctx.lineTo(30,0);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.arc(0,-6,10,Math.PI,0);ctx.fillStyle=`rgba(255,196,110,${.2+.4*glow})`;ctx.fill();}
+ else if(k==="steps"){for(let i=0;i<4;i++){ctx.fillRect(-40+6*i,-6*i-6,80-12*i,6);}}
+ else if(k==="tree"){ctx.fillStyle="#2a2033";ctx.fillRect(-4,-34,8,34);
+  ctx.beginPath();ctx.arc(0,-46,26,0,7);ctx.fillStyle="rgba(90,160,110,.5)";ctx.fill();
+  ctx.beginPath();ctx.arc(-18,-36,15,0,7);ctx.fill();ctx.beginPath();ctx.arc(18,-36,15,0,7);ctx.fill();}
+ else if(k==="hut"){ctx.fillRect(-20,-22,40,22);
+  ctx.beginPath();ctx.moveTo(-26,-22);ctx.lineTo(0,-42);ctx.lineTo(26,-22);ctx.closePath();
+  ctx.fillStyle="#232c48";ctx.fill();win(-4,-16,8,8);}
+ else if(k==="stalls"){for(let i=-1;i<=1;i++){ctx.fillRect(i*26-10,-18,20,18);
+  ctx.fillStyle=["#5a3040","#3f4a2c","#503d28"][i+1];ctx.fillRect(i*26-12,-24,24,7);ctx.fillStyle="#1a2135";}}
+ else if(k==="pool"){ctx.beginPath();ctx.ellipse(0,-4,36,11,0,0,7);
+  ctx.fillStyle=`rgba(110,170,230,${.25+.3*glow})`;ctx.fill();
+  ctx.strokeStyle="rgba(160,190,240,.4)";ctx.stroke();}
+ else if(k==="pyre"){ctx.fillStyle="#241c22";ctx.fillRect(-16,-6,32,6);
+  ctx.beginPath();ctx.moveTo(-7,-6);ctx.lineTo(0,-24-8*glow);ctx.lineTo(7,-6);ctx.closePath();
+  ctx.fillStyle=`rgba(240,140,70,${.5+.4*glow})`;ctx.fill();}
+ else if(k==="module"){ctx.fillRect(-34,-26,68,26);ctx.strokeRect(-34,-26,68,26);
+  win(-24,-18,7,7);win(-6,-18,7,7);win(12,-18,7,7);}
+ ctx.restore();
+ ctx.fillStyle="rgba(190,200,235,.55)";ctx.font="10px ui-monospace,Menlo,monospace";
+ ctx.textAlign="center";ctx.fillText(p.n,x,y+18);}
+let selected=null,armed=null,follow=null;
+function renderWorld(dt){
+ if(!W)return;
+ const ai=ageOf(W.year),ageP=AGES[ai],amb=ageP.amb;
+ // sky
+ const t=W.cfg;
+ const grad=ctx.createLinearGradient(0,0,0,CH);
+ grad.addColorStop(0,t.sky[0]);grad.addColorStop(1,t.sky[1]);
+ ctx.fillStyle=grad;ctx.fillRect(0,0,CW,CH);
+ ctx.fillStyle=`rgba(0,0,0,${(1-amb)*.5})`;ctx.fillRect(0,0,CW,CH);
+ if(ai===3){ctx.fillStyle="rgba(160,40,40,.07)";ctx.fillRect(0,0,CW,CH);}
+ // stars
+ for(const st of stars){ctx.globalAlpha=(0.25+0.6*st[3])*(.5+.5*amb);
+  ctx.fillStyle="#cdd6ff";ctx.fillRect(st[0],st[1],st[2],st[2]);}
+ ctx.globalAlpha=1;
+ // ground
+ ctx.fillStyle=t.ground;ctx.beginPath();ctx.moveTo(0,CH*.62);
+ ctx.bezierCurveTo(CW*.3,CH*.56,CW*.7,CH*.66,CW,CH*.6);
+ ctx.lineTo(CW,CH);ctx.lineTo(0,CH);ctx.closePath();ctx.fill();
+ // paths between places
+ ctx.strokeStyle="rgba(150,160,210,.10)";ctx.lineWidth=3;
+ const P=t.places;
+ for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){
+  if((i+j)%2)continue;
+  ctx.beginPath();ctx.moveTo(P[i].x,P[i].y+8);
+  ctx.quadraticCurveTo((P[i].x+P[j].x)/2,(P[i].y+P[j].y)/2+22,P[j].x,P[j].y+8);ctx.stroke();}
+ // buildings
+ for(const p of P)drawBuilding(p,amb*.9+.1);
+ // souls
+ const speedF=playing?SPEEDS[speedI]:0.4;
+ for(const s of W.souls){
+  if(!s.alive)continue;
+  const dx=s.tx-s.x,dy=s.ty-s.y,d=Math.hypot(dx,dy);
+  const sp=(8+R()*6)*dt*speedF*(s.isAvatar?1.4:1);
+  if(d>2){s.x+=dx/d*Math.min(sp,d);s.y+=dy/d*Math.min(sp,d);}
+  else{s.dwell-=dt*speedF;if(s.dwell<=0)sendTo(s,Math.floor(R()*P.length));}
+  const r=s.isAvatar?5:(s.age<16?1.6:2.6);
+  const col=s.isAvatar?"#fff6d8":HC[s.house];
+  ctx.beginPath();ctx.arc(s.x,s.y,r+3,0,7);
+  ctx.fillStyle=s.isAvatar?`rgba(255,240,190,${.28+.14*Math.sin(perf/300)})`:col+"33";ctx.fill();
+  ctx.beginPath();ctx.arc(s.x,s.y,r,0,7);ctx.fillStyle=col;ctx.fill();
+  if(s===selected||s===follow){ctx.beginPath();ctx.arc(s.x,s.y,r+7,0,7);
+   ctx.strokeStyle="#fff";ctx.lineWidth=1.2;ctx.stroke();}}
+ // effects
+ FX=FX.filter(f=>f.t<1);
+ for(const f of FX){f.t+=dt*(f.type==="pralaya"?.35:(f.type==="moksha"?.28:.9));
+  const u=f.t;
+  if(f.type==="moksha"){const y=f.y-90*u;
+   ctx.globalAlpha=1-u;ctx.beginPath();ctx.arc(f.x,y,4,0,7);ctx.fillStyle="#ffe9a3";ctx.fill();
+   ctx.beginPath();ctx.arc(f.x,y,10+18*u,0,7);ctx.strokeStyle="#ffe9a3";ctx.stroke();ctx.globalAlpha=1;}
+  else if(f.type==="birth"){ctx.globalAlpha=1-u;ctx.beginPath();ctx.arc(f.x,f.y,2+6*u,0,7);
+   ctx.strokeStyle="#9fd7ff";ctx.stroke();ctx.globalAlpha=1;}
+  else if(f.type==="death"){ctx.globalAlpha=(1-u)*.5;ctx.beginPath();ctx.arc(f.x,f.y,3+4*u,0,7);
+   ctx.fillStyle="#8a93b8";ctx.fill();ctx.globalAlpha=1;}
+  else if(f.type==="spark"){ctx.globalAlpha=1-u;ctx.fillStyle=f.color;
+   ctx.fillRect(f.x-1,f.y-8-8*u,2,4);ctx.globalAlpha=1;}
+  else if(f.type==="avatar"){ctx.globalAlpha=(1-u)*.7;
+   const g2=ctx.createLinearGradient(f.x,f.y-190,f.x,f.y);
+   g2.addColorStop(0,"rgba(255,244,200,0)");g2.addColorStop(1,"rgba(255,244,200,.8)");
+   ctx.fillStyle=g2;ctx.fillRect(f.x-13+6*u,f.y-190,26-12*u,190);ctx.globalAlpha=1;}
+  else if(f.type==="miracle"){ctx.globalAlpha=(1-u)*.8;ctx.beginPath();ctx.arc(f.x,f.y,10+130*u,0,7);
+   ctx.strokeStyle="#ffe9a3";ctx.lineWidth=2;ctx.stroke();ctx.globalAlpha=1;ctx.lineWidth=1;}
+  else if(f.type==="calamity"){ctx.globalAlpha=(1-u)*.7;ctx.beginPath();ctx.arc(f.x,f.y,10+130*u,0,7);
+   ctx.strokeStyle="#e56b6b";ctx.lineWidth=2;ctx.stroke();ctx.globalAlpha=1;ctx.lineWidth=1;}
+  else if(f.type==="pralaya"){ctx.globalAlpha=Math.sin(u*Math.PI)*.85;
+   ctx.fillStyle="#efe6d8";ctx.fillRect(0,0,CW,CH);ctx.globalAlpha=1;}}
+}
+let perf=0;
+/* ---------------- HUD / DOM ---------------- */
+function renderHud(){
+ if(!W)return;
+ const ai=ageOf(W.year),alive=W.souls.filter(s=>s.alive);
+ $("c-year").textContent=W.year;$("c-cc").textContent=W.cc+1;
+ $("c-agename").textContent=W.cfg.ages[ai];$("c-agedot").style.background=AGES[ai].dot;
+ $("k-pop").textContent=alive.length;$("k-lib").textContent=W.liberated.length;
+ const living=alive.filter(s=>!s.isAvatar);
+ $("k-virt").textContent=living.length?(living.reduce((a,s)=>a+meanV(s),0)/living.length).toFixed(2):"—";
+ $("k-doct").textContent=Math.round(doctrine()*100)+"%";
+ const pts=W.houses.map((h,i)=>{const mem=living.filter(s=>s.house===i);
+  const mv=mem.length?mem.reduce((a,s)=>a+meanV(s),0)/mem.length:0;
+  return{...h,score:Math.round(mv*100+h.libs*25)};}).sort((a,b)=>b.score-a.score);
+ $("hud").innerHTML=pts.map(p=>`<div class="hudhouse"><span class="sw" style="background:${p.color}"></span>${p.name}<b>${p.score}</b></div>`).join("");
+ while(W.chronSeen<W.chron.length){
+  const e=W.chron[W.chronSeen++];
+  const div=document.createElement("div");div.className="ev k-"+e.k;
+  div.innerHTML=`<span class="y">${e.y}</span><span class="t">${e.t}</span>`;
+  const c=$("chron");c.prepend(div);
+  while(c.children.length>34)c.removeChild(c.lastChild);}
+ $("d-avatar").disabled=!W.returnable.length;
+ renderInspector();
+ $("c-foot").textContent=`souls ever: ${W.souls.length} · unborn: ${W.pool.length} · ${W.cfg.libLabel}: ${W.liberated.length} · myths: ${W.myths.length} · click a light to meet a soul`;}
+function renderInspector(){
+ const b=$("insp-body"),e=$("insp-empty");
+ if(!selected){b.innerHTML="";e.style.display="block";return;}
+ e.style.display="none";
+ if(selected.isPlace){const p=selected;
+  const here=W.souls.filter(s=>s.alive&&s.place===W.cfg.places.indexOf(p));
+  b.innerHTML=`<div class="nm">${p.n}</div><div class="st">${here.length} souls present</div>`+
+   here.slice(0,6).map(s=>`<div class="st" style="color:${HC[s.house]}">• ${s.name} — ${W.houses[s.house].name}</div>`).join("");
+  return;}
+ const s=selected;
+ if(!s.alive){b.innerHTML=`<div class="nm">${s.name||"a soul"}</div><div class="st">${s.moksha?W.cfg.mokshaWord:"between lives · "+s.lives+" lived"}</div>`;return;}
+ const bar=(l,v,c)=>`<span class="lab">${l}</span><div class="track"><div class="fill" style="width:${v*100}%;background:${c}"></div></div><span class="val">${v.toFixed(2)}</span>`;
+ b.innerHTML=`<div class="nm" style="color:${s.isAvatar?"var(--gold)":HC[s.house]}">${s.name}</div>
+  <span class="tag">${s.isAvatar?"walking avatar":W.houses[s.house].name+" · life "+(s.lives+1)+" · age "+s.age}</span>
+  <div class="st">at ${place(s.place).n}</div>
+  <div class="bars">${bar("virtue",meanV(s),"var(--good)")}${bar("buddhi",Math.min(1,s.buddhi/0.6),"var(--violet)")}
+  ${bar("compulsion",s.comp,"var(--bad)")}${bar("sattva",s.g[0],"var(--blue)")}</div>
+  <div style="margin-top:9px"><button id="btn-bless">✦ bless this soul</button>
+  <button id="btn-follow">${follow===s?"unfollow":"follow"}</button></div>`;
+ $("btn-bless").onclick=()=>{s.g[0]=clamp(s.g[0]+.15);const g=s.g[0]+s.g[1]+s.g[2];s.g=s.g.map(x=>x/g);
+  s.unity=clamp(s.unity+.04);fx("miracle",s.x,s.y);
+  note("myth",`A quiet grace touches ${s.name}`);};
+ $("btn-follow").onclick=()=>{follow=(follow===s)?null:s;renderInspector();};}
+
+/* ---------------- main loops ---------------- */
+let playing=false,speedI=1;const SPEEDS=[1,4,16];
+let simAcc=0,lastT=0;
+function frame(ts){
+ const dt=Math.min(.05,(ts-lastT)/1000||.016);lastT=ts;perf=ts;
+ if(W){
+  if(playing){simAcc+=dt*SPEEDS[speedI];
+   let n=0;while(simAcc>=1&&n<24){simAcc-=1;tick();n++;}}
+  renderWorld(dt);
+  if(!frame.hud||ts-frame.hud>250){frame.hud=ts;renderHud();}}
+ requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+function setPlaying(p){playing=p;$("btn-play").textContent=p?"❚❚":"▶";}
+
+/* ---------------- foundry wiring ---------------- */
+let themeKey="academy";
+function loadPreset(k){themeKey=k;const t=THEMES[k];
+ document.querySelectorAll(".preset").forEach(p=>p.classList.toggle("sel",p.dataset.k===k));
+ $("f-name").value=t.world;t.houses.forEach((h,i)=>$("f-h"+i).value=h);}
+$("presets").innerHTML=Object.entries(THEMES).map(([k,t])=>
+ `<div class="preset" data-k="${k}" role="button" tabindex="0"><h3>${t.label}</h3><p>${t.desc}</p></div>`).join("");
+document.querySelectorAll(".preset").forEach(p=>{
+ p.addEventListener("click",()=>loadPreset(p.dataset.k));
+ p.addEventListener("keydown",e=>{if(e.key==="Enter")loadPreset(p.dataset.k);});});
+loadPreset("academy");
+[["f-souls","v-souls",x=>x],["f-adv","v-adv",x=>Number(x).toFixed(1)],
+ ["f-casc","v-casc",x=>Number(x).toFixed(1)],["f-cycle","v-cycle",x=>x]].forEach(([i,v,f])=>{
+ $(i).addEventListener("input",()=>$(v).textContent=f($(i).value));});
+$("btn-ignite").addEventListener("click",()=>{
+ const t=THEMES[themeKey];
+ const cfg={world:$("f-name").value||t.world,
+  houses:[0,1,2,3].map(i=>$("f-h"+i).value||t.houses[i]),
+  places:t.places,names:t.names,ages:t.ages,mokshaWord:t.mokshaWord,libLabel:t.libLabel,
+  avatarText:t.avatarText,pralayaText:t.pralayaText,mythW:t.mythW,
+  sky:t.sky,ground:t.ground,
+  houseBias:[{v:"courage",x:"mada"},{v:"discernment",x:"moha"},
+             {v:"compassion",x:"lobha"},{v:"truth",x:"kama"}],
+  souls:Number($("f-souls").value),adv:Number($("f-adv").value),
+  casc:Number($("f-casc").value),cycle:Number($("f-cycle").value),
+  seed:Math.floor(Math.random()*1e5)};
+ build(cfg);
+ $("c-name").textContent=cfg.world;$("k-lib-l").textContent=cfg.libLabel;
+ $("chron").innerHTML="";W.chronSeen=0;selected=null;follow=null;FX=[];
+ $("foundry").style.display="none";$("worldui").style.display="block";
+ window.scrollTo(0,0);setPlaying(true);});
+
+/* ---------------- world controls ---------------- */
+$("btn-play").addEventListener("click",()=>setPlaying(!playing));
+$("btn-speed").addEventListener("click",()=>{speedI=(speedI+1)%SPEEDS.length;
+ $("btn-speed").textContent=SPEEDS[speedI]+"×";});
+$("btn-rebuild").addEventListener("click",()=>{setPlaying(false);
+ $("worldui").style.display="none";$("foundry").style.display="block";window.scrollTo(0,0);});
+$("d-avatar").addEventListener("click",()=>descend(true));
+$("d-pralaya").addEventListener("click",()=>pralaya(true));
+function arm(kind,btn){armed=armed===kind?null:kind;
+ document.querySelectorAll(".divine button").forEach(b=>b.classList.remove("armed"));
+ if(armed){btn.classList.add("armed");$("pill-armed").style.display="inline";}
+ else $("pill-armed").style.display="none";}
+$("d-miracle").addEventListener("click",e=>arm("miracle",e.target));
+$("d-calamity").addEventListener("click",e=>arm("calamity",e.target));
+$("d-tempt").addEventListener("input",()=>{W&&(W.tempt=Number($("d-tempt").value));
+ $("v-tempt").textContent=(Number($("d-tempt").value)>=0?"+":"")+Number($("d-tempt").value).toFixed(2);});
+cv.addEventListener("click",e=>{
+ if(!W)return;
+ const r=cv.getBoundingClientRect();
+ const x=(e.clientX-r.left)*CW/r.width,y=(e.clientY-r.top)*CH/r.height;
+ if(armed){
+  fx(armed,x,y);
+  const R2=130*130;
+  const targets=W.souls.filter(s=>s.alive&&((s.x-x)**2+(s.y-y)**2)<R2);
+  if(armed==="miracle"){for(const s of targets){s.g[0]=clamp(s.g[0]+.14);
+    const g=s.g[0]+s.g[1]+s.g[2];s.g=s.g.map(v=>v/g);s.unity=clamp(s.unity+.03);}
+   note("myth",`Grace falls near ${nearestPlace(x,y).n}; ${targets.length} souls are touched`);}
+  else{const ai=ageOf(W.year);
+   for(const s of targets){if(s.isAvatar||s.age<16)continue;
+    chooseAndLearnForced(s,AGES[ai]);}
+   note("doom",`Calamity strikes ${nearestPlace(x,y).n}; ${targets.length} souls are tested by loss`);}
+  arm(null,{classList:{add(){},remove(){}}});
+  document.querySelectorAll(".divine button").forEach(b=>b.classList.remove("armed"));
+  $("pill-armed").style.display="none";
+  return;}
+ // select soul or place
+ let best=null,bd=15*15;
+ for(const s of W.souls){if(!s.alive)continue;
+  const d=(s.x-x)**2+(s.y-y)**2;if(d<bd){bd=d;best=s;}}
+ if(best){selected=best;renderInspector();return;}
+ const p=nearestPlace(x,y);
+ if(((p.x-x)**2+(p.y-y)**2)<60*60){selected={isPlace:true,...p};renderInspector();}
+ else{selected=null;renderInspector();}});
+function nearestPlace(x,y){let b=W.cfg.places[0],bd=1e9;
+ for(const p of W.cfg.places){const d=(p.x-x)**2+(p.y-y)**2;if(d<bd){bd=d;b=p;}}return b;}
+function chooseAndLearnForced(s,ageP){
+ // a forced trial of loss, at elevated severity
+ const saveT=W.tempt;W.tempt=clamp(W.tempt+.2,-1,1);
+ const r=chooseAndLearn(s,ageP,{adv:W.cfg.adv,casc:W.cfg.casc});
+ W.tempt=saveT;return r;}
+document.addEventListener("keydown",e=>{
+ if(e.code==="Space"&&e.target.tagName!=="INPUT"&&$("worldui").style.display==="block"){
+  e.preventDefault();setPlaying(!playing);}});
+})();
+</script>

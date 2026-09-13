@@ -24,6 +24,7 @@ from .events import EVENT_TEMPLATES
 from .karma import apply_outcome
 from .metrics import MetricsLog, YearRecord
 from .person import Person
+from .annals import Annals
 from .arts import ArtSystem
 from .culture import CultureSystem
 from .religion import ReligionSystem
@@ -91,9 +92,15 @@ class Universe:
         # Chronicle: notable events, for viewers and posterity
         self.chronicle: List[tuple] = []       # (year, kind, text)
         self._first_moksha_noted = False
+        # The Annals: the witness's full narratable record (names, houses,
+        # lives, deeds). Narration-side; rolls its own dice.
+        self.annals = Annals(config.seed)
+        self.annals.clock = self.clock
 
         self._init_souls()
         self._init_population()
+        self.annals.event(0, "dawn", "The world is manifest; the first houses are "
+                          + ", ".join(self.annals.houses))
 
     def note(self, kind: str, text: str) -> None:
         self.chronicle.append((self.year, kind, text))
@@ -122,7 +129,17 @@ class Universe:
         self.avatar_descents += 1
         self._avatar_this_year = 1
         self.note("avatar", "A hand reaches in: a liberated one descends")
+        self._annals_descent(p, forced=True)
         return True
+
+    def _annals_descent(self, p: Person, forced: bool = False) -> None:
+        life = self.annals.new_life(p, self.year, avatar=True, role_fn=self._derive_role)
+        prev = self.annals.previous_life(life)
+        was = f", who was once {prev.name} the {prev.role}" if prev and prev.role else ""
+        self.annals.event(self.year, "avatar",
+                          f"A liberated one descends as {life.name} of {life.house}{was}"
+                          + (" — called down by a hand from outside" if forced else ""),
+                          who=[life.name], serial=life.soul_serial)
 
     def god_pralaya(self) -> None:
         self._pralaya()
@@ -232,6 +249,12 @@ class Universe:
             soul = person.soul
             person.body.alive = False
             soul.current_body_id = None
+            self.annals.death(person, self.year, self._derive_role(soul),
+                              soul.mean_virtue() - person.start_virtue,
+                              max(INSTABILITIES, key=lambda v: getattr(soul, v)),
+                              liberated=False, dissolved=True,
+                              ledger=(person.life_veto, person.life_akrasia,
+                                      person.life_unseen, person.life_effortless))
             if person.is_avatar:
                 self.returnable.add(soul.soul_id)   # an avatar simply withdraws
                 continue
@@ -239,6 +262,10 @@ class Universe:
             soul.recompute_karmic_load()
             self.available.add(soul.soul_id)  # returns to the unmanifest pool, not moksha
         self.persons.clear()
+        self.annals.event(self.year, "pralaya",
+                          "Pralaya: the manifest world dissolves into the unmanifest; "
+                          "every living body is unmade",
+                          count=self.pralaya_count + 1)
 
         # The night of Brahma: rest in the unmanifest. Karmic seeds persist;
         # activity-patterns dissolve with the manifest world. Every soul's habit
@@ -254,6 +281,9 @@ class Universe:
         self.note("pralaya", "Pralaya: the world dissolves into the unmanifest; a new Satya dawns")
         self.pralaya_count += 1
         self._init_population()               # a new Satya dawns; souls re-embody
+        self.annals.event(self.year, "dawn",
+                          f"A new Satya dawns; {len(self.persons)} souls take bodies "
+                          f"again in the old houses", count=self.pralaya_count)
 
     def _init_population(self) -> None:
         rules = self.cfg.rules
@@ -273,6 +303,7 @@ class Universe:
             p.snapshot_start()
             soul.born_reason = soul.born_reason or "was among the first, at the founding"
             self.persons[body.body_id] = p
+            self.annals.new_life(p, self.year, founding=True, role_fn=self._derive_role)
 
     # -- soul injection ----------------------------------------------------
     def _select_soul_for_birth(self, mother: Optional[Person] = None,
@@ -396,12 +427,16 @@ class Universe:
             soul.history.append(entry)
             if len(soul.history) > 12:
                 soul.history.pop(0)
+            self._death_entry = entry
+        else:
+            self._death_entry = None
 
         # v3: the thread — how the partnership ends decides whether it recurs.
         # A long, well-lived bond resolves and releases; an unfinished one
         # leaves an open thread on both souls that will seek reunion.
         partner = self.persons.get(person.partner_id) if person.partner_id else None
         if partner is not None:
+            self.annals.unbond(person, partner, self.year, "death")
             other = partner.soul
             harmony = clamp(0.20 + 0.05 * min(person.bond_years, 10)
                             + 0.30 * (person.alignment_consistency()
@@ -424,13 +459,21 @@ class Universe:
         # still liberated, back into the returnable pool. No karma, no re-count.
         if person.is_avatar:
             self.returnable.add(soul.soul_id)
+            self.annals.death(person, self.year, "avatar", 0.0, "", liberated=False)
+            self.annals.event(self.year, "withdrawal",
+                              f"{person.name} of {person.house}, the descended one, lays "
+                              f"the body down at {person.age} and withdraws", who=[person.name])
             return
 
         soul.lifetime_count += 1
         soul.consolidate_death(self.cfg.hyp.vasana_carry)  # habits fade into vasanas
         soul.recompute_karmic_load()
 
-        if assess_moksha(soul, self.cfg.rules):
+        freed = assess_moksha(soul, self.cfg.rules)
+        e = self._death_entry
+        self.annals.death(person, self.year, e["role"], e["dv"], e["enemy"],
+                          liberated=freed, ledger=e["ledger"])
+        if freed:
             soul.moksha = True
             self.liberated.add(soul.soul_id)
             self._substrate_absorb(soul)          # merge: wisdom enriches the ground (always)
@@ -476,6 +519,7 @@ class Universe:
         self.avatar_descents += 1
         self._avatar_this_year = 1
         self.note("avatar", "Dharma has fallen; a liberated one descends")
+        self._annals_descent(p)
 
     def _mind_cycle(self, yuga) -> None:
         """Yearly inner weather: fatigue recovers with rest; each soul's gunas
@@ -516,14 +560,18 @@ class Universe:
                 decision = choose_action(person, event, eff_yuga, hyp, self.rng)
                 # The avatar acts (always aligned, lifting the world) but is beyond
                 # refinement — no karma updates its already-perfected soul.
+                difficulty = clamp(event.base_severity * eff_yuga.hardness)
+                self.annals.moment(person, self.year, event.condition, decision, difficulty)
                 if not person.is_avatar:
                     apply_outcome(person, event, decision, eff_yuga, hyp,
                                   integration_bonus=teaching)
                     # a public act may leave a trace — witnesses see the OUTWARD
                     # act only; the inner kind goes to the noncausal audit
-                    self.culture.maybe_trace(person, event.condition,
-                                             decision.action.alignment,
-                                             decision, self.year)
+                    trace = self.culture.maybe_trace(person, event.condition,
+                                                     decision.action.alignment,
+                                                     decision, self.year)
+                    if trace is not None:
+                        self.annals.deed(person, trace)
                 # measurement only
                 self._choice_total += 1
                 if decision.action.alignment > 0:
@@ -606,6 +654,8 @@ class Universe:
                 best.partner_id = f.body_id
                 f.bond_years = best.bond_years = 0
                 singles_m.remove(best)
+                self.annals.bond(f, best, self.year,
+                                 reunion=str(best.soul.soul_id) in f.soul.threads)
                 if str(best.soul.soul_id) in f.soul.threads:
                     self.reunions += 1
                     self.note("bond", "Two souls, long entangled, find each other again")
@@ -626,6 +676,7 @@ class Universe:
             f.bond_years += 1
             m.bond_years = f.bond_years
             if f.bond_years > 3 and self._attraction(f, m) < 0.55 and self.rng.random() < 0.06:
+                self.annals.unbond(f, m, self.year, "drift")
                 f.partner_id = m.partner_id = None
                 f.bond_years = m.bond_years = 0
                 continue
@@ -653,6 +704,8 @@ class Universe:
                 baby_p = Person(soul=soul, body=baby)
                 baby_p.snapshot_start()
                 self.persons[baby.body_id] = baby_p
+                self.annals.new_life(baby_p, self.year, mother=f, father=m,
+                                     role_fn=self._derive_role)
                 births += 1
         return births
 
@@ -793,6 +846,7 @@ class Universe:
         # The meta-loop: the world's own inhabitants write and rewrite its scriptures
         for kind, text in self.religion.step(self, yuga):
             self.note(kind, text)
+            self.annals.event(self.year, kind, text)
 
         # Safety net: if the manifest world collapses mid-cycle while souls remain
         # in the unmanifest, a new Satya still dawns rather than the run ending.

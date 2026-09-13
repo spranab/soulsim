@@ -112,9 +112,12 @@ class CultureSystem:
     def maybe_trace(self, person, event_condition: str, act_alignment: float,
                     decision, year: int) -> None:
         if self.rng.random() > self.P_PUBLIC.get(event_condition, 0.2):
-            return
+            return None
         if getattr(person, "name_token", None) is None:
-            person.name_token = self.mint_name()
+            # dice discipline: the mint rolls exactly as it always did, but the
+            # world knows this body by its annals name (one person, one name)
+            minted = self.mint_name()
+            person.name_token = getattr(person, "name", "") or minted
         witnesses = max(1, int(self.rng.gauss(8, 6)))
         scale = min(4, max(0, int(abs(self.rng.gauss(0.8, 0.9)))))
         self._tid += 1
@@ -134,6 +137,7 @@ class CultureSystem:
             difficulty=0.0, was_avatar=person.is_avatar))
         if len(self.audit) > 4000:
             self.audit.pop(0)
+        return self.traces[-1]
 
     # -- 2. accounts and lies -------------------------------------------------
     def utter(self, persons, year: int, hyp) -> None:

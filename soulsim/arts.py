@@ -71,6 +71,101 @@ VERSE = {
 }
 
 
+# The refrain couplet above is chosen on the culture stream, exactly as before.
+# Around it, on the narration stream, a verse grows an opening and a closing —
+# so no two hymns of the same rasa are the same poem. Slots come from true state.
+OPENERS = {
+    "karuna": ["{name} of {house} sat by the cold hearth and would not be moved;",
+               "there is a hollow in the house where a voice used to be;",
+               "the year the {age} took its share of us, {name} learned the weight of a name;",
+               "do not tell me the river is kind —"],
+    "raudra": ["hear it, {house} — {name} has counted the wrongs and will not stop counting;",
+               "there is a fire that was banked too long in the {age};",
+               "they thought the quiet one had no teeth;",
+               "let the elders say what they will:"],
+    "shanta": ["at evening in {house} the wheel is only a sound;",
+               "{name} has walked the road until the road forgot to argue;",
+               "in the {age} the light is honest, and there is nothing to defend;",
+               "what is left when the wanting is set down? this:"],
+    "vira":   ["when the {age} broke the ground under {house},",
+               "there is a place where the line must be held or nothing is held;",
+               "{name} did not ask to be the one standing;",
+               "the drum says one name tonight and the name is {name}:"],
+    "adbhuta": ["something in the {age} is not made of anything we know;",
+                "{name} of {house} looked up and could not look down again;",
+                "count the lamps in the dark — there are more than there were;",
+                "who set the wheel spinning and left it so beautiful?"],
+    "shringara": ["{name} walks the long way home through {house} to pass one door;",
+                  "the {age} is only weather; you are the season;",
+                  "I have a debt to you older than my name;",
+                  "say nothing yet; the lamp has not been lit —"],
+    "hasya":  ["listen, {house}, to the great matter of the sandal:",
+               "{name} went to the market with a wise face and came back with a goose;",
+               "the {age} is grim, the elders say, so we laughed until it wasn't;",
+               "a joke is a small wheel; watch it go —"],
+    "bhayanaka": ["in the {age} the road home is not the road you took;",
+                  "{name} of {house} has seen what the well sees;",
+                  "there is a sound the night makes when it has learned your name;",
+                  "bar the door; it will not help, but bar the door —"],
+    "bibhatsa": ["the {age} put its finger in every honey-pot of {house};",
+                 "{name} has smelled the rot beneath the incense and says so;",
+                 "they call it a feast; look at the bones;",
+                 "spare me the temple and its accounts —"],
+}
+CLOSERS = {
+    "karuna": ["so I go on singing, which is all a mouth can do for a wound.",
+               "and the house of {house} keeps one lamp lit for the one who is not coming.",
+               "grief is a debt the {age} collects slowly; {name} pays it a coin a day.",
+               "sit with me; there is no hurry left to have."],
+    "raudra": ["and when the fire is done there will be a clean place to stand.",
+               "{name} will not kneel; the {age} can keep its perfume.",
+               "write it on the beam; let the children read what we were.",
+               "let it burn — some things are only true as ash."],
+    "shanta": ["and the evening, being enough, asks nothing more of {name}.",
+               "the wheel turns; {house} turns with it; nothing is lost that was true.",
+               "this is what the {age} was for: to make the quiet audible.",
+               "sit. the water-jar is full. it was always full."],
+    "vira":   ["and the song remembers the standing, not the cost.",
+               "{house} is a place again because {name} refused to move.",
+               "the {age} was dark, which is why the one who stood could be seen.",
+               "hold; hold; the dawn is nothing but people holding."],
+    "adbhuta": ["and everything ordinary shone, and has not stopped shining.",
+                "{name} came home and could not say it, and said it anyway.",
+                "the {age} opened like an eye, and {house} was inside the looking.",
+                "there is one more lamp tonight; I do not know whose."],
+    "shringara": ["some threads are older than the loom; ours is one.",
+                  "meet me where the two paths cross; the stars will not tell.",
+                  "{name} of {house} knew your walk before your name, and knows it still.",
+                  "the {age} may keep its ages; I have this hour."],
+    "hasya":  ["and the wheel, hearing it, laughed, and turned a little easier.",
+               "{name} says wisdom was a fair price for a goose; {house} agrees.",
+               "even the {age} could not keep its face straight.",
+               "the sage found his sandal. it was on his foot."],
+    "bhayanaka": ["the dark is patient; it learned from {house}.",
+                  "do not go past the last lamp; the {age} is waiting there in a familiar coat.",
+                  "{name} bars the door each night and each night it is already open.",
+                  "what waits there wears our faces, and is polite."],
+    "bibhatsa": ["{name} will not bow to perfume; the rot is at least honest.",
+                 "count what the {age} sold: everything, twice, and the receipt.",
+                 "gild it again; {house} can see the beam under the gold.",
+                 "spit, and go. there is nothing here to keep."],
+}
+
+
+def compose_verse(rasa: str, refrain: str, name: str, age: str, house: str,
+                  nrng) -> str:
+    """Narration only: grow the refrain into a short hymn on the narration dice."""
+    slots = dict(name=name, age=age, house=house or "the house")
+    parts = []
+    r = nrng.random()
+    if r < 0.8:
+        parts.append(nrng.choice(OPENERS[rasa]).format(**slots))
+    parts.append(refrain)
+    if r > 0.2:
+        parts.append(nrng.choice(CLOSERS[rasa]).format(**slots))
+    return "\n".join(parts)
+
+
 @dataclass
 class Artwork:
     aid: int
@@ -131,15 +226,24 @@ class ArtSystem:
                             + 0.04 * person.life_akrasia + 0.04 * person.life_veto)
             if rng.random() < hyp.art_rate * sens * (0.3 + intensity):
                 if getattr(person, "name_token", None) is None:
-                    person.name_token = universe.culture.mint_name()
+                    # dice discipline: the mint rolls as before; the name is the
+                    # annals name (one person, one name)
+                    minted = universe.culture.mint_name()
+                    person.name_token = getattr(person, "name", "") or minted
                 rasa, born = self._rasa_for(person, yuga)
                 self._aid += 1
-                verse = rng.choice(VERSE[rasa]).format(
+                refrain = rng.choice(VERSE[rasa]).format(
                     name=person.name_token, born=born, age=yuga.name)
+                annals = getattr(universe, "annals", None)
+                verse = (compose_verse(rasa, refrain, person.name_token, yuga.name,
+                                       getattr(person, "house", ""), annals.nrng)
+                         if annals is not None else refrain)
                 w = Artwork(aid=self._aid, year=universe.year, age_name=yuga.name,
                             creator=person.name_token, form=rng.choice(FORMS),
                             rasa=rasa, intensity=intensity, born_of=born,
                             strength=2.0 + 4.0 * intensity, verse=verse)
+                if annals is not None:
+                    annals.work(person, w)
                 self.works.append(w)
                 if rng.random() < 0.10:
                     events.append(("art", f"{w.creator} makes a {w.form} of {w.rasa}, born of {w.born_of}"))
@@ -166,6 +270,11 @@ class ArtSystem:
                 retired.append(w)
                 events.append(("art", f"'{w.form} of {w.creator}' enters the canon; "
                                       f"the world knows its {w.rasa} by heart"))
+                annals = getattr(universe, "annals", None)
+                if annals is not None:
+                    annals.event(universe_year, "canon",
+                                 f"the {w.form} of {w.creator} enters the canon",
+                                 who=[w.creator], aid=w.aid, rasa=w.rasa, form=w.form)
         self.works = [w for w in self.works if w.strength >= 0.8 and w not in retired]
         self.works.sort(key=lambda w: w.strength, reverse=True)
         self.works = self.works[: self.MAX_WORKS]

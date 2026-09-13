@@ -41,6 +41,11 @@ class Person:
     name_token: object = None
     cultural: Dict[str, float] = field(default_factory=dict)
 
+    # annals: the name and house this body is recorded under from birth. The
+    # public name_token, once minted, is this same name — one person, one name.
+    name: str = ""
+    house: str = ""
+
     # v4: the life ledger — what this incarnation did with its choices. At death
     # it consolidates into the soul's history, making the life narratable.
     life_veto: int = 0

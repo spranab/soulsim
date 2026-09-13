@@ -79,6 +79,12 @@ class Myth:
     born_yuga: str
     institution: bool = False
     retellings: int = 0
+    # narration-side: who spoke it, and what happened to it since
+    seer: str = ""
+    seer_role: str = ""
+    seer_house: str = ""
+    institution_year: object = None
+    lineage: list = field(default_factory=list)   # (year, kind) events
     # story side (deeds-become-myth): an optional claim bundle about WHO did
     # WHAT at what scale. Mutates independently of the doctrine props — a false
     # biography can carry a true teaching, and vice versa.
@@ -104,7 +110,8 @@ class ReligionSystem:
         return min(1.0, 0.45 * soul.unity_awareness + 0.35 * soul.sattva
                    + 0.20 * soul.buddhi)
 
-    def reveal(self, soul, year: int, yuga, context: dict) -> Optional[Myth]:
+    def reveal(self, soul, year: int, yuga, context: dict, person=None,
+               universe=None) -> Optional[Myth]:
         """A soul perceives the mechanics of its world — through its own clarity."""
         clarity = self._clarity(soul)
         n_props = self.rng.randint(3, 6)
@@ -142,6 +149,11 @@ class ReligionSystem:
                     born_year=year, born_yuga=yuga.name)
         self._next_id += 1
         self.myths.append(myth)
+        if person is not None and universe is not None:
+            myth.seer = getattr(person, "name", "") or "an unnamed seer"
+            myth.seer_house = getattr(person, "house", "")
+            myth.seer_role = universe._derive_role(soul)
+            universe.annals.revelation(person, myth)
         return myth
 
     # -- the yearly turn ------------------------------------------------------
@@ -162,7 +174,8 @@ class ReligionSystem:
         for person in adults:
             clarity = self._clarity(person.soul)
             if rng.random() < hyp.revelation_rate * clarity:
-                m = self.reveal(person.soul, universe.year, yuga, context)
+                m = self.reveal(person.soul, universe.year, yuga, context,
+                                person=person, universe=universe)
                 if m and m.accuracy() >= 0.99:
                     events.append(("revelation",
                                    f"A seer speaks: '{m.name}' is born, and every word of it is true"))
@@ -194,6 +207,8 @@ class ReligionSystem:
         for m in self.myths:
             if not m.institution and m.strength > hyp.institution_threshold * pop:
                 m.institution = True
+                m.institution_year = universe.year
+                m.lineage.append((universe.year, "institution"))
                 events.append(("institution",
                                f"'{m.name}' becomes an institution ({m.accuracy():.0%} true at canonization)"))
             if m.institution and yuga.name in ("Dvapara", "Kali"):
@@ -203,6 +218,7 @@ class ReligionSystem:
                     if true_props:
                         p = rng.choice(true_props)
                         m.props[p] = not m.props[p]
+                        m.lineage.append((universe.year, "corruption"))
                         events.append(("corruption", f"The canon of '{m.name}' is corrupted"))
             if m.institution and yuga.name in ("Satya", "Treta"):
                 # reform: a clear age restores a broken clause
@@ -211,6 +227,7 @@ class ReligionSystem:
                     if false_props:
                         p = rng.choice(false_props)
                         m.props[p] = GROUND_TRUTHS[p]
+                        m.lineage.append((universe.year, "reform"))
                         events.append(("reform", f"'{m.name}' is reformed; a truth is restored"))
 
         # 4.5 the story side: birth from utterances, retelling mutations,
@@ -258,6 +275,7 @@ class ReligionSystem:
         for m in self.myths:
             if m.strength < 1.0 or (not m.props and m.story is None):
                 if m.institution:
+                    m.lineage.append((universe.year, "extinction"))
                     events.append(("extinction", f"The way of '{m.name}' is forgotten"))
             else:
                 survivors.append(m)

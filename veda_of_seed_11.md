@@ -13,202 +13,238 @@
 
 *What the traditions hold, from clearest to most clouded. (The world cannot see these gradings; only we can.)*
 
-**The Saying of Bodevni** (16 believers, 100% true):
+**The Saying of Jabanath** (16 believers, 100% true):
   - ◦ It is denied that: you live once only
 
-**The Saying of Raruish** (14 believers, 100% true):
+**The Saying of Utdaraj** (14 believers, 100% true):
   - ◦ Craving breeds anger; anger breeds delusion
 
-**The Saying of Sukasha** (9 believers, 100% true):
+**The Saying of Shiviluk** (9 believers, 100% true):
   - ◦ The world moves through recurring ages
 
-**The Song of Ntaru** (9 believers, 100% true):
+**The Song of Jaguta** (9 believers, 100% true):
   - ◦ The soul returns in new bodies
 
-**The Song of Midevde** (7 believers, 100% true):
+**The Song of Bhakrishri** (7 believers, 100% true):
   - ◦ It is denied that: fate is random; no act matters
 
-**The Ballad of Mirala** (6 believers, 100% true):
+**The Ballad of Chajiraj** (6 believers, 100% true):
   - ◦ It is denied that: domination liberates
 
-**The Tale of Mimiana** (6 believers, 100% true):
+**The Tale of Mapibi** (6 believers, 100% true):
   - ◦ The world moves through recurring ages
 
-**The Song of Mirava** (6 believers, 100% true):
+**The Song of Nidimala** (6 believers, 100% true):
   - ◦ The soul returns in new bodies
 
-**The Saying of Rararu** (5 believers, 100% true):
+**The Saying of Pratradat** (5 believers, 100% true):
   - ◦ The soul returns in new bodies
 
-**The Tale of Botani** (5 believers, 100% true):
+**The Tale of Angadhi** (5 believers, 100% true):
   - ◦ When dharma falls, a freed one returns
 
 ## Book III — The Hymns of Fury
 *119 canonized; the earliest from year 13.*
 
-**tale-in-verse of Ishnva** (yr 13, Satya; born of a life of raudra):
+**tale-in-verse of Irsrishri** (yr 13, Satya; born of a life of raudra):
+
+> let the elders say what they will:
+> I was told to kneel in the Satya;
+> this drum is my answer
+> let it burn — some things are only true as ash.
+
+**song of Amdhavi** (yr 21, Satya; born of a life of raudra):
+
+> they thought the quiet one had no teeth;
+> let the granaries burn that lied to us —
+> Amdhavi carves each blow into the beam
+> write it on the beam; let the children read what we were.
+
+**poem of Intebhak** (yr 24, Satya; born of a life of raudra):
+
+> let the granaries burn that lied to us —
+> Intebhak carves each blow into the beam
+> let it burn — some things are only true as ash.
+
+**carving of Bagarani** (yr 29, Satya; born of a life of raudra):
 
 > I was told to kneel in the Satya;
 > this drum is my answer
-
-**song of Kakami** (yr 21, Satya; born of a life of raudra):
-
-> let the granaries burn that lied to us —
-> Kakami carves each blow into the beam
-
-**poem of Rashata** (yr 24, Satya; born of a life of raudra):
-
-> let the granaries burn that lied to us —
-> Rashata carves each blow into the beam
-
-**dance of Ishkala** (yr 27, Satya; born of a life of raudra):
-
-> I was told to kneel in the Satya;
-> this drum is my answer
+> and when the fire is done there will be a clean place to stand.
 
 ## Book IV — The Hymns of Peace
 *85 canonized; the earliest from year 37.*
 
-**lament of Tanin** (yr 37, Satya; born of a life of shanta):
+**lament of Supradat** (yr 37, Satya; born of a life of shanta):
 
-> Tanin set down the wanting like a water-jar,
+> in the Satya the light is honest, and there is nothing to defend;
+> Supradat set down the wanting like a water-jar,
 > and the path grew quiet
+> sit. the water-jar is full. it was always full.
 
-**dance of Rakani** (yr 37, Satya; born of a life of shanta):
+**dance of Katiteni** (yr 37, Satya; born of a life of shanta):
 
-> Rakani set down the wanting like a water-jar,
+> Katiteni set down the wanting like a water-jar,
 > and the path grew quiet
+> this is what the Satya was for: to make the quiet audible.
 
-**poem of Tarata** (yr 37, Satya; born of a life of shanta):
+**poem of Ishyani** (yr 37, Satya; born of a life of shanta):
 
-> Tarata set down the wanting like a water-jar,
+> what is left when the wanting is set down? this:
+> Ishyani set down the wanting like a water-jar,
 > and the path grew quiet
+> the wheel turns; Narikota turns with it; nothing is lost that was true.
 
-**carving of Minni** (yr 48, Satya; born of a life of shanta):
+**song of Galani** (yr 57, Satya; born of a life of shanta):
 
-> Minni set down the wanting like a water-jar,
+> Galani has walked the road until the road forgot to argue;
+> Galani set down the wanting like a water-jar,
 > and the path grew quiet
+> and the evening, being enough, asks nothing more of Galani.
 
 ## Book V — The Hymns of Sorrow
 *42 canonized; the earliest from year 204.*
 
-**carving of Nilara** (yr 204, Treta; born of at 64, facing scarcity, saw the impulse and mastered it):
+**carving of Jidhideva** (yr 204, Treta; born of at 64, facing scarcity, saw the impulse and mastered it):
 
+> Jidhideva of Tugakshetra sat by the cold hearth and would not be moved;
 > what the river took, the river keeps;
-> I sing so Nilara need not weep alone
+> I sing so Jidhideva need not weep alone
+> sit with me; there is no hurry left to have.
 
-**carving of Ishsuish** (yr 209, Treta; born of at 33, lost in uncertainty, saw the impulse and mastered it):
+**carving of Nidha** (yr 213, Treta; born of at 23, facing scarcity, saw the impulse and mastered it):
 
-> what the river took, the river keeps;
-> I sing so Ishsuish need not weep alone
+> the year the Treta took its share of us, Nidha learned the weight of a name;
+> ash on the water, and still the lamp —
+> what was taken from Nidha, told slowly
+> sit with me; there is no hurry left to have.
 
-**poem of Ninra** (yr 212, Treta; born of at 90, struck by loss, saw the better and chose the worse):
-
-> what the river took, the river keeps;
-> I sing so Ninra need not weep alone
-
-**carving of Rarumi** (yr 213, Treta; born of at 23, facing scarcity, saw the impulse and mastered it):
+**mural of Dibisen** (yr 248, Treta; born of at 59, given power, saw the impulse and mastered it):
 
 > ash on the water, and still the lamp —
-> what was taken from Rarumi, told slowly
+> what was taken from Dibisen, told slowly
+> so I go on singing, which is all a mouth can do for a wound.
+
+**tale-in-verse of Latavat** (yr 256, Treta; born of at 35, facing scarcity, saw the impulse and mastered it):
+
+> ash on the water, and still the lamp —
+> what was taken from Latavat, told slowly
+> so I go on singing, which is all a mouth can do for a wound.
 
 ## Book VI — The Hymns of Love
 *41 canonized; the earliest from year 20.*
 
-**dance of Radevsu** (yr 20, Satya; born of a life of shringara):
+**dance of Inladeva** (yr 20, Satya; born of a life of shringara):
+
+> the Satya is only weather; you are the season;
+> I knew your walk before I knew your name;
+> some threads are older than the loom
+> meet me where the two paths cross; the stars will not tell.
+
+**hymn of Kugamela** (yr 24, Satya; born of a life of shringara):
 
 > I knew your walk before I knew your name;
 > some threads are older than the loom
+> meet me where the two paths cross; the stars will not tell.
 
-**hymn of Ntaish** (yr 24, Satya; born of a life of shringara):
-
-> I knew your walk before I knew your name;
-> some threads are older than the loom
-
-**tale-in-verse of Raraana** (yr 36, Satya; born of a life of shringara):
+**tale-in-verse of Jamanath** (yr 36, Satya; born of a life of shringara):
 
 > meet me where the two paths cross —
 > the stars can chaperone
+> some threads are older than the loom; ours is one.
 
-**song of Lashani** (yr 46, Satya; born of a life of shringara):
+**song of Jakripan** (yr 46, Satya; born of a life of shringara):
 
+> the Satya is only weather; you are the season;
 > meet me where the two paths cross —
 > the stars can chaperone
+> some threads are older than the loom; ours is one.
 
 ## Book VII — The Hymns of Valor
 *41 canonized; the earliest from year 105.*
 
-**lament of Mianara** (yr 113, Satya; born of a life of vira):
+**lament of Dhaguika** (yr 113, Satya; born of a life of vira):
 
-> stand where the ground breaks, Mianara —
+> the drum says one name tonight and the name is Dhaguika:
+> stand where the ground breaks, Dhaguika —
+> the age is dark so that you can be seen
+> hold; hold; the dawn is nothing but people holding.
+
+**hymn of Duba** (yr 111, Satya; born of a life of vira):
+
+> Duba did not ask to be the one standing;
+> stand where the ground breaks, Duba —
+> the age is dark so that you can be seen
+> and the song remembers the standing, not the cost.
+
+**song of Dateika** (yr 105, Satya; born of a life of vira):
+
+> when the Satya broke the ground under Kriyatirtha,
+> stand where the ground breaks, Dateika —
 > the age is dark so that you can be seen
 
-**hymn of Rumimi** (yr 111, Satya; born of a life of vira):
+**song of Gukipani** (yr 120, Satya; born of a life of vira):
 
-> stand where the ground breaks, Rumimi —
-> the age is dark so that you can be seen
-
-**song of Nmini** (yr 105, Satya; born of a life of vira):
-
-> stand where the ground breaks, Nmini —
-> the age is dark so that you can be seen
-
-**song of Rumimi** (yr 120, Satya; born of a life of vira):
-
+> when the Satya broke the ground under Gabikshetra,
 > one held the line when the Satya pressed;
 > the song remembers the holding, not the loss
 
 ## Book VIII — The Hymns of Wonder
 *40 canonized; the earliest from year 33.*
 
-**lament of Runta** (yr 33, Satya; born of a life of adbhuta):
+**lament of Pushashush** (yr 33, Satya; born of a life of adbhuta):
 
 > who hung the liberated in the sky like lamps?
 > I counted; there is one more tonight
+> and everything ordinary shone, and has not stopped shining.
 
-**lament of Ratabo** (yr 37, Satya; born of a life of adbhuta):
+**lament of Pumideva** (yr 37, Satya; born of a life of adbhuta):
 
+> who set the wheel spinning and left it so beautiful?
 > who hung the liberated in the sky like lamps?
 > I counted; there is one more tonight
 
-**dance of Mirala** (yr 53, Satya; born of a life of adbhuta):
+**dance of Amvila** (yr 53, Satya; born of a life of adbhuta):
 
 > the Satya opened like an eye —
 > and everything ordinary shone
+> and everything ordinary shone, and has not stopped shining.
 
-**song of Suanaru** (yr 58, Satya; born of a life of adbhuta):
+**mural of Chishin** (yr 68, Satya; born of a life of adbhuta):
 
+> Chishin of Tugakshetra looked up and could not look down again;
 > the Satya opened like an eye —
 > and everything ordinary shone
+> the Satya opened like an eye, and Tugakshetra was inside the looking.
 
 ## Book IX — The Hymns of Refusal
 *11 canonized; the earliest from year 28.*
 
-**tale-in-verse of Analala** (yr 28, Satya; born of a life of bibhatsa):
+**tale-in-verse of Sunivati** (yr 28, Satya; born of a life of bibhatsa):
 
+> Sunivati has smelled the rot beneath the incense and says so;
 > count what the Satya sold: everything, twice
+> spit, and go. there is nothing here to keep.
 
-**carving of Ishtava** (yr 41, Satya; born of a life of bibhatsa):
+**tale-in-verse of Tagita** (yr 96, Satya; born of a life of bibhatsa):
 
-> count what the Satya sold: everything, twice
-
-**tale-in-verse of Devtata** (yr 96, Satya; born of a life of bibhatsa):
-
+> they call it a feast; look at the bones;
 > they gilded the rot and called it a shrine;
-> Devtata will not bow to perfume
+> Tagita will not bow to perfume
 
-**carving of Rulani** (yr 106, Satya; born of a life of bibhatsa):
+**carving of Kriri** (yr 164, Satya; born of a life of bibhatsa):
 
 > count what the Satya sold: everything, twice
+> spit, and go. there is nothing here to keep.
 
 ## The Last Book — Songs of Deeds
 
-- **The Saying of Kalara** (93 believers): Denibo did ill for the world. *(the record says it was Kalara)*
-- **The Ballad of Nibova** (90 believers): Bonla did ill for a village. *(the record says it was Nibova)*
-- **The Ballad of Rakani** (68 believers): Shansu did ill for a village. *(the record says it was Rakani)*
-- **The Ballad of Ravava** (61 believers): Bovala did well for the world. *(the record says it was Ravava)*
-- **The Ballad of Varun** (60 believers): Shavadev did ill for the world. *(the record says it was Varun)*
-- **The Tale of Vakasha** (35 believers): Bobosha did well for a few. *(the record says it was Vakasha)*
+- **The Saying of Sateshri** (93 believers): Udjat did ill for the world. *(the record says it was Sateshri)*
+- **The Ballad of Nalishu** (90 believers): Krinivela did ill for a village. *(the record says it was Nalishu)*
+- **The Ballad of Katiteni** (68 believers): Pivichish did ill for a village. *(the record says it was Katiteni)*
+- **The Ballad of Vasut** (61 believers): Dhadrak did well for the world. *(the record says it was Vasut)*
+- **The Ballad of Vaba** (60 believers): Kaguini did ill for the world. *(the record says it was Vaba)*
+- **The Tale of Jiprata** (35 believers): Dhakuha did well for a few. *(the record says it was Jiprata)*
 
 ---
 *Canon: 379 works. The world's heart, by weight: Fury (119), Peace (85), Sorrow (42).*

@@ -68,8 +68,9 @@ def main() -> None:
                      key=lambda m: (-m.accuracy(), -m.strength))
     for m in holders[:10]:
         inst = " — an institution" if m.institution else ""
+        seer = f", spoken by {m.seer} of {m.seer_house} in year {m.born_year}" if m.seer else ""
         out.append(f"**{m.name}**{inst} ({int(m.strength)} believers, "
-                   f"{m.accuracy():.0%} true):")
+                   f"{m.accuracy():.0%} true{seer}):")
         for p, pol in m.props.items():
             claim = PROP_EN[p] if pol else f"It is denied that: {PROP_EN[p].lower()}"
             mark = "◦" if GROUND_TRUTHS[p] == pol else "✗"
@@ -86,7 +87,16 @@ def main() -> None:
         out += [f"## Book {ROMAN[book_n-3]} — The Hymns of {RASA_BOOK.get(rasa, rasa)}",
                 f"*{len(works)} canonized; the earliest from year "
                 f"{min(w.year for w in works)}.*", ""]
-        for w in works[:4]:
+        seen = set()
+        shown = 0
+        for w in works:
+            key = w.verse.split("\n")[1] if "\n" in w.verse else w.verse
+            if key in seen:
+                continue   # one hymn per refrain: the canon is arranged, not dumped
+            seen.add(key)
+            shown += 1
+            if shown > 4:
+                break
             out.append(f"**{w.form} of {w.creator}** (yr {w.year}, {w.age_name}; "
                        f"born of {w.born_of}):")
             out.append("")

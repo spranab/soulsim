@@ -144,6 +144,53 @@ them yearly). Play/pause/scrub through 1500 years — ages banding the charts,
 pralaya flashes, KPIs and legends as live readouts, soul cards, and the
 chronicle of everything the world will remember.
 
+## The library (`bard.py`, `bardic/`, `soulsim/annals.py`) — the world writes books
+
+A cosmos is only as readable as what it writes down. The **Annals**
+(`soulsim/annals.py`) are the witness's record of everything narratable,
+written *as it happens*: every body gets a name and a house at birth; every
+life keeps its parents, partners (and whether a partner was a soul known from
+another life), children, every test it faced and how it went (mastered /
+betrayed / swept along / effortless), the deeds that were seen and by how
+many, the works it composed, the teachings it spoke, its death and what the
+world called it. Seers now have names; teachings have lineages (founded,
+corrupted, reformed, forgotten); avatars are known by the body they took and
+the body they once wore.
+
+The Annals roll their own dice. The physics stream and the culture stream
+consume exactly what they consumed before the record existed, so a seed's
+measured outcome is **byte-identical** with or without it — verified by
+diffing `run.py` output before and after.
+
+The **Bard** (`bard.py`) turns the Annals into a library, one genre per book:
+
+```
+python3 bard.py                                # seed 11, 500 years, every genre
+python3 bard.py --seed 108 --years 800 --genres epic,novel
+python3 bard.py --model none                   # no LLM: the chronicler's plain prose
+```
+
+| genre | what it is | how it is mined |
+|---|---|---|
+| **epic** | one soul across many lives, a canto per life, the ages turning between them | the liberated soul with the hardest recorded road (falls, betrayals, reunions) |
+| **novel** | one life in depth: the house, youth, the bond, the tests, the turning, the last year, what the world kept | the life with the most novel in it (a long span, a bond, children, tests won *and* failed, something done in public, something made) |
+| **history** | the chronicle of the ages, a book per cycle, a chapter per yuga, numbers in tables | metrics + the Annals: great deeds, seers, institutions, canonized works, the houses, the notable dead, the freed |
+| **scripture** | a Veda: a hymn of origins, the seers' sūtras with commentary, hymns by rasa grown from their own lines, ballads of deeds | the living traditions, the canon, the story-myths — with the witness's gloss (which clauses are true, which name is wrong) kept out of the text and in the colophon |
+| **tales** | the three short forms | the long road, the fall, the forgotten doer |
+
+The division of labour is the one this project already trusts: **the world
+supplies the plot, the model supplies the prose, a verifier keeps it
+honest.** Each chapter's fact-sheet (a list of true sentences) goes to a local
+model (`ollama`; `--model auto` picks the best installed, preferring
+`qwen3.6:35b`, then `qwen3.5:9b`) as *translator* under absolute rules —
+invent no event, name, place, god or number. A groundedness lint rejects any
+numeral or mid-sentence proper noun not in the fact-sheet and retries; a
+near-miss is scrubbed rather than published. Every book ends with **The
+Record** (every chapter's fact-sheet) and a **Groundedness** table (who wrote
+the chapter, whether the lint passed, what fraction of the must-say facts
+survived), so any sentence can be checked. Without a model the books are still
+written, in the chronicler's plain prose. Sample library: `library/seed_11/`.
+
 ## Mokṣa — the pass / exit criterion (`soul.assess_moksha`)
 
 A soul leaves the simulation (into a `liberated` set, never to return) when it
@@ -184,8 +231,10 @@ score in one kind life. This is the computational meaning of spiritual maturity.
 - Numbers are illustrative, not calibrated against anything real.
 - Liberation is still commoner than the scriptural "scarcely one" at the default
   knobs — tune `adversity_refines` / `learning_rate` down for a rarer trickle.
-- No economy, geography, institutions, or emergent religion yet. Souls are the
-  only entities that learn; civilizations do not (yet).
+- No economy or geography in the physics. The "houses" of the Annals are
+  lineage labels for narration (a child inherits its father's house), not
+  places that do anything. Institutions and emergent religion exist
+  (`religion.py`); civilizations still do not learn as entities.
 
 ## Next steps (candidates)
 
@@ -194,8 +243,8 @@ score in one kind life. This is the computational meaning of spiritual maturity.
 - The MVP experiment from the design: *does intelligence without compassion
   reliably cause collapse?* (2×2 over intelligence/compassion growth).
 - A dashboard over the CSV output.
-- LLM-written biographies for individual soul trajectories (readable output
-  only — never in the rule path).
+- Longer-form works from the Annals: a chronicle play, a lineage saga (one
+  house across the ages), letters between thread-bound souls.
 
 ## Layout
 
@@ -214,4 +263,12 @@ soulsim/
   yoni.py           the pre-human ascent (bhoga, one-way)
   world.py          the Universe and the yearly system loop
   metrics.py        the measured layer (observation only)
+  annals.py         the witness's narratable record (names, houses, lives, deeds)
+bard.py             the library: epic / novel / history / scripture / tales
+bardic/
+  render.py         local model as translator + groundedness lint + plain fallback
+  book.py           chapters -> markdown, with The Record and Groundedness appended
+  common.py         true sentences about lives, myths, works
+  epic.py novel.py history.py scripture.py tales.py   the genre miners
+compile_veda.py     the collected canon, unrendered (what Vyasa did: collect, arrange)
 ```

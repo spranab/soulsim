@@ -24,7 +24,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 import ladder_dashboard as dash
-import train_dashboard as tdash
+try:                                    # the training page lives in the private repo
+    import train_dashboard as tdash
+except ImportError:                     # public checkout: no /train route
+    tdash = None
 
 LAST_GOOD: dict = {}
 
@@ -59,9 +62,9 @@ def make_handler(directory: str):
             if path in ("/", "/index.html", "/dashboard.html"):
                 self._send(dash.build_html(_read_results(results_path), live=True).encode(),
                            "text/html; charset=utf-8")
-            elif path in ("/train", "/train/"):
+            elif tdash is not None and path in ("/train", "/train/"):
                 self._send(tdash.build_html(tdash.collect()).encode(), "text/html; charset=utf-8")
-            elif path == "/train/results.json":
+            elif tdash is not None and path == "/train/results.json":
                 self._send(json.dumps(tdash.collect()).encode(), "application/json")
             elif path == "/results.json":
                 self._send(json.dumps(_read_results(results_path)).encode(), "application/json")

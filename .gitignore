@@ -19,3 +19,19 @@ venv/
 sakshi.html
 witness.py
 build_sakshi.py
+
+# the memory experiments (Vāṇī, ConsultNet, the linearization) continue in the private
+# repository spranab/samsara-net; this checkout is the paper and the library
+train/
+train_dashboard.py
+docs/samsara-net-*.md
+docs/redteam-*.md
+tests/test_vani.py
+tests/test_lifeslot*.py
+tests/test_link_loss.py
+tests/test_eval_par.py
+tests/test_consult.py
+tests/test_lifenet.py
+tests/test_linear.py
+tests/test_train_extras.py
+tests/test_gpt_consult.py

@@ -3,10 +3,11 @@
 
     python3 ladder_server.py [--port 8778] [--dir ladder]
 
-Three routes, all local:
-    /              the dashboard, built from the current results and polling
+Routes, all local:
+    /              the ladder dashboard, built from the current results and polling
     /results.json  the runner's results file, as it stands right now
     /log           the last lines of the runner's log (ladder/run.log)
+    /train         the Saṃsāra-Net training page (reads train/runs/*/results.json)
 
 The runner writes results.json atomically after every chapter, so a read
 never sees a torn file; the page polls every three seconds and redraws when
@@ -23,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
 import ladder_dashboard as dash
+import train_dashboard as tdash
 
 LAST_GOOD: dict = {}
 
@@ -57,6 +59,10 @@ def make_handler(directory: str):
             if path in ("/", "/index.html", "/dashboard.html"):
                 self._send(dash.build_html(_read_results(results_path), live=True).encode(),
                            "text/html; charset=utf-8")
+            elif path in ("/train", "/train/"):
+                self._send(tdash.build_html(tdash.collect()).encode(), "text/html; charset=utf-8")
+            elif path == "/train/results.json":
+                self._send(json.dumps(tdash.collect()).encode(), "application/json")
             elif path == "/results.json":
                 self._send(json.dumps(_read_results(results_path)).encode(), "application/json")
             elif path == "/log":

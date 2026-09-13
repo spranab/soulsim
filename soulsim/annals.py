@@ -62,6 +62,12 @@ class Namer:
     def __init__(self, rng: random.Random) -> None:
         self.rng = rng
         self.used = set()
+        # narration-side only: which syllable/ending tokens built each minted
+        # name, so a tokenizer (train/vani.py) can emit and re-join them
+        # without re-drawing dice. Recorded, never consumed: every value
+        # stored here was already produced by the calls below.
+        self.parts: Dict[str, List[str]] = {}
+        self._last_syllables: List[str] = []
 
     def _syllables(self, n: int) -> str:
         parts = [self.rng.choice(_SYL_FIRST)]
@@ -69,6 +75,7 @@ class Namer:
             s = self.rng.choice(_SYL)
             if s != parts[-1]:
                 parts.append(s)
+        self._last_syllables = list(parts)
         return "".join(parts)
 
     def person(self, sex: str) -> str:
@@ -76,21 +83,31 @@ class Namer:
         for _ in range(200):
             n = 2 if self.rng.random() < 0.7 else 3
             end = self.rng.choice(ends if n == 2 else _END_SHORT)
-            name = (self._syllables(n) + end).capitalize()
+            syl = self._syllables(n)
+            name = (syl + end).capitalize()
             if name not in self.used and 4 <= len(name) <= 10:
                 self.used.add(name)
+                self.parts[name] = self._last_syllables + ([end] if end else [])
                 return name
-        name = self._syllables(3).capitalize() + str(len(self.used))
+        syl = self._syllables(3)
+        name = syl.capitalize() + str(len(self.used))
         self.used.add(name)
+        self.parts[name] = self._last_syllables + [str(len(self.used) - 1)]
         return name
 
     def house(self) -> str:
         for _ in range(200):
-            name = (self._syllables(2) + self.rng.choice(_HOUSE_SUFFIX)).capitalize()
+            syl = self._syllables(2)
+            suffix = self.rng.choice(_HOUSE_SUFFIX)
+            name = (syl + suffix).capitalize()
             if name not in self.used:
                 self.used.add(name)
+                self.parts[name] = self._last_syllables + [suffix]
                 return name
-        return self._syllables(3).capitalize() + "pura"
+        syl = self._syllables(3)
+        name = syl.capitalize() + "pura"
+        self.parts[name] = self._last_syllables + ["pura"]
+        return name
 
 
 # ---------------------------------------------------------------------------

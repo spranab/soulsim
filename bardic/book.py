@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
 from .render import Renderer
+from .verify import verify_chapter
 
 
 @dataclass
@@ -55,13 +56,22 @@ def load_prior(out_dir: str, slug: str) -> Dict[str, Dict]:
 
 
 def compile_book(book: Book, renderer: Renderer, out_dir: str, verbose: bool = True,
-                 prior: Optional[Dict[str, Dict]] = None) -> str:
+                 prior: Optional[Dict[str, Dict]] = None, verify: bool = False,
+                 verifier: Optional[Renderer] = None) -> str:
     """Render every chapter and write the book. With `prior` (a load_prior()
     result), chapters the model already wrote cleanly are kept and only the
-    scrubbed or plain ones are rendered again — a repair pass."""
+    scrubbed or plain ones are rendered again — a repair pass.
+
+    With `verify` on, every chapter the model wrote gets a second reader
+    (`verify_chapter`, `verifier` or `renderer`): the lint below catches an
+    invented name or number, but not an invented EVENT — a marriage, a
+    reconciliation, a title never granted — that carries neither. A kept
+    chapter that was already verified is not re-verified."""
     os.makedirs(out_dir, exist_ok=True)
     t0 = time.time()
     lead = ""
+    checker = verifier or renderer
+    v_checked = v_rewritten = v_deleted = v_remaining = 0
     # any number true anywhere in this book's record is not an invention
     book_numbers = set(re.findall(r"\d+", "\n".join(l for c in book.chapters for l in c.brief)))
     for i, ch in enumerate(book.chapters):
@@ -78,6 +88,20 @@ def compile_book(book: Book, renderer: Renderer, out_dir: str, verbose: bool = T
                                         must_say=ch.must_say, form=ch.form, inside=book.inside,
                                         lead=lead if ch.form == "prose" else "",
                                         numbers=book_numbers)
+        if verify and ch.result and str(ch.result.get("source", "")).startswith("model") \
+                and "verify" not in ch.result:
+            v = verify_chapter(ch.result["text"], ch.brief, checker, form=ch.form,
+                               glossary=book.glossary, numbers=book_numbers)
+            ch.result = dict(ch.result)
+            ch.result["text"] = v["text"]
+            ch.result["verify"] = {k: val for k, val in v.items() if k != "text"}
+            v_checked += v["checked"]
+            v_rewritten += v["rewritten"]
+            v_deleted += v["deleted"]
+            v_remaining += v["remaining"]
+            if verbose and v["checked"]:
+                print(f"    second reader: {v['checked']} checked, {v['rewritten']} rewritten, "
+                      f"{v['deleted']} deleted, {v['remaining']} remaining", flush=True)
         # continuity for the next chapter: this chapter's facts, compressed
         lead = " ".join(ch.brief[:3])[:600]
     md = render_markdown(book)
@@ -90,6 +114,9 @@ def compile_book(book: Book, renderer: Renderer, out_dir: str, verbose: bool = T
              "result": c.result} for c in book.chapters]}, f, indent=1)
     if verbose:
         print(f"  wrote {path} ({len(md) // 1024} KB, {time.time() - t0:.0f}s)")
+        if verify:
+            print(f"  second reader: {v_checked} sentences checked, {v_rewritten} rewritten, "
+                  f"{v_deleted} deleted, {v_remaining} remaining", flush=True)
     return path
 
 
@@ -122,12 +149,16 @@ def render_markdown(book: Book) -> str:
             "*Every chapter above was rendered from the fact-sheet below and nothing "
             "else. Where the model's prose failed the groundedness lint after every "
             "retry, the offending names or numbers were scrubbed; where no model was "
-            "available, the chronicler's plain prose stands in.*", ""]
+            "available, the chronicler's plain prose stands in. A second reader then "
+            "reads every sentence against the record for invented events the lint "
+            "can't see — a marriage, a reconciliation, a title never granted — and "
+            "rewrites or deletes what it finds.*", ""]
     for c in book.chapters:
         out += [f"<details><summary><b>{c.heading}</b></summary>", ""]
         out += [f"- {line}" for line in c.brief]
         out += ["", "</details>", ""]
-    out += ["## Groundedness", "", "| chapter | written by | lint | facts kept |", "|---|---|---|---|"]
+    out += ["## Groundedness", "",
+            "| chapter | written by | lint | facts kept | second reader |", "|---|---|---|---|---|"]
     for c in book.chapters:
         r = c.result or {}
         lint = r.get("lint", {})
@@ -135,6 +166,22 @@ def render_markdown(book: Book) -> str:
             lint.get("invented_names", []) + lint.get("invented_numbers", [])) or "fail")
         cov = r.get("coverage")
         cov_s = "—" if cov is None else f"{cov:.0%}"
-        out.append(f"| {c.heading} | {r.get('source', '—')} | {flag} | {cov_s} |")
+        out.append(f"| {c.heading} | {r.get('source', '—')} | {flag} | {cov_s} | {_verify_cell(r)} |")
     out.append("")
     return "\n".join(out)
+
+
+def _verify_cell(result: Dict) -> str:
+    """The Groundedness table's 'second reader' column: what verify_chapter
+    found, or '—' where it never ran."""
+    v = result.get("verify")
+    if not v or not v.get("checked"):
+        return "—"
+    parts = [f"{v['checked']} checked"]
+    if v.get("rewritten"):
+        parts.append(f"{v['rewritten']} rewritten")
+    if v.get("deleted"):
+        parts.append(f"{v['deleted']} deleted")
+    if v.get("remaining"):
+        parts.append(f"{v['remaining']} remaining")
+    return " · ".join(parts)

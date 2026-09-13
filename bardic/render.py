@@ -92,6 +92,12 @@ class Renderer:
         self.calls = 0
         self.seconds = 0.0
         self.tokens = 0
+        self.prompt_tokens = 0
+        self.prompt_seconds = 0.0
+        self.gen_seconds = 0.0
+        self.last: Dict = {}
+        self.first_call: Dict = {}   # this render()'s FIRST attempt only — what
+                                     # the writer had to read, unpadded by retries
         self._ok: Optional[bool] = None
 
     # -- availability ---------------------------------------------------------
@@ -114,20 +120,34 @@ class Renderer:
             self._ok = False
         return self._ok
 
-    def _generate(self, prompt: str, n_predict: int) -> str:
-        body = json.dumps({"model": self.model, "prompt": prompt, "stream": False,
-                           "think": False,
-                           "options": {"num_predict": n_predict,
-                                       "temperature": self.temperature,
-                                       "num_ctx": self.num_ctx}}).encode()
+    def _generate(self, prompt: str, n_predict: int, fmt: Optional[str] = None) -> str:
+        payload = {"model": self.model, "prompt": prompt, "stream": False,
+                  "think": False,
+                  "options": {"num_predict": n_predict,
+                              "temperature": self.temperature,
+                              "num_ctx": self.num_ctx}}
+        if fmt:
+            payload["format"] = fmt   # e.g. "json" — the second reader asks for a verdict, not prose
+        body = json.dumps(payload).encode()
         req = urllib.request.Request(f"{OLLAMA}/api/generate", data=body,
                                      headers={"Content-Type": "application/json"})
         t = time.time()
         with urllib.request.urlopen(req, timeout=900) as r:
             d = json.loads(r.read())
+        wall = time.time() - t
         self.calls += 1
-        self.seconds += time.time() - t
+        self.seconds += wall
         self.tokens += int(d.get("eval_count") or 0)
+        # ollama reports durations in nanoseconds; convert to seconds
+        p_tokens = int(d.get("prompt_eval_count") or 0)
+        p_seconds = (d.get("prompt_eval_duration") or 0) / 1e9
+        g_seconds = (d.get("eval_duration") or 0) / 1e9
+        self.prompt_tokens += p_tokens
+        self.prompt_seconds += p_seconds
+        self.gen_seconds += g_seconds
+        self.last = {"wall_seconds": wall, "prompt_tokens": p_tokens,
+                    "gen_tokens": int(d.get("eval_count") or 0),
+                    "prompt_seconds": p_seconds, "gen_seconds": g_seconds}
         text = d.get("response") or ""
         if not text.strip():
             text = d.get("thinking") or ""   # some models answer in the wrong field
@@ -137,13 +157,22 @@ class Renderer:
     def render(self, voice: str, brief: List[str], words: Tuple[int, int] = (300, 450),
                glossary: Iterable[str] = (), must_say: Iterable[str] = (),
                lead: str = "", form: str = "prose", inside: bool = True,
-               numbers: Iterable[str] = ()) -> Dict:
+               numbers: Iterable[str] = (), brief_for_prompt: Optional[List[str]] = None,
+               legend: str = "") -> Dict:
         """Returns {text, lint, coverage, source} where source is 'model' or 'plain'.
         `glossary` and `numbers` widen the allowed sets to the whole book's record:
-        a name or a number that is true anywhere in the book is not an invention."""
+        a name or a number that is true anywhere in the book is not an invention.
+
+        `brief_for_prompt` lets a caller show the model a DIFFERENT (e.g.
+        terser) rendering of the same facts than the one the lint checks
+        against: the prompt is built from `brief_for_prompt` (with `legend`
+        inserted just before THE RECORD), but `allowed_names`/`allowed_nums`
+        — and so what counts as an invention — still come from `brief`."""
         brief_text = "\n".join(f"- {line}" for line in brief)
         allowed_names = set(_proper_nouns(brief_text)) | set(glossary)
         allowed_nums = set(re.findall(r"\d+", brief_text)) | set(numbers)
+        prompt_brief_text = ("\n".join(f"- {line}" for line in brief_for_prompt)
+                             if brief_for_prompt is not None else brief_text)
         n_predict = int(words[1] * 1.9) + 80 if form == "prose" else int(words[1] * 16) + 80
         length = (f"Length: {words[0]}-{words[1]} words of prose. No verse, no rhyme, no "
                   "headings, no bullet points." if form == "prose" else
@@ -170,8 +199,10 @@ class Renderer:
                      "reader as a reader.\n" if inside else "")
                   + "\n"
                   + (f"WHAT CAME BEFORE (for continuity only):\n{lead}\n\n" if lead else "")
-                  + f"THE RECORD:\n{brief_text}\n\nTHE TEXT:")
+                  + (f"{legend}\n\n" if legend else "")
+                  + f"THE RECORD:\n{prompt_brief_text}\n\nTHE TEXT:")
         best = None
+        self.first_call = {}
         if self.available():
             for attempt in range(self.retries + 1):
                 try:
@@ -180,6 +211,8 @@ class Renderer:
                     if self.verbose:
                         print(f"[renderer] call failed: {e}")
                     break
+                if attempt == 0:
+                    self.first_call = dict(self.last)
                 text = words_to_digits(_tidy(text))
                 lint = groundedness_lint(text, allowed_names, allowed_nums)
                 cov = coverage(text, must_say)

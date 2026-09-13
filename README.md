@@ -177,6 +177,9 @@ python3 bard.py --model none                   # no LLM: the chronicler's plain 
 | **history** | the chronicle of the ages, a book per cycle, a chapter per yuga, numbers in tables | metrics + the Annals: great deeds, seers, institutions, canonized works, the houses, the notable dead, the freed |
 | **scripture** | a Veda: a hymn of origins, the seers' sūtras with commentary, hymns by rasa grown from their own lines, ballads of deeds | the living traditions, the canon, the story-myths — with the witness's gloss (which clauses are true, which name is wrong) kept out of the text and in the colophon |
 | **tales** | the three short forms | the long road, the fall, the forgotten doer |
+| **saga** | one house across the ages: its rulers, seers, deeds, works, the freed | the house with the most weight in the record |
+| **upanishad** | dialogues between a seer and a real listener from the seer's own household, one per clause the teaching holds | the top living teachings with a named seer |
+| **letters** | two thread-bound souls write to each other across two lives, then the witness's afterword | the strongest reunion whose earlier bodies were bonded too |
 
 The division of labour is the one this project already trusts: **the world
 supplies the plot, the model supplies the prose, a verifier keeps it
@@ -185,11 +188,23 @@ model (`ollama`; `--model auto` picks the best installed, preferring
 `qwen3.6:35b`, then `qwen3.5:9b`) as *translator* under absolute rules —
 invent no event, name, place, god or number. A groundedness lint rejects any
 numeral or mid-sentence proper noun not in the fact-sheet and retries; a
-near-miss is scrubbed rather than published. Every book ends with **The
-Record** (every chapter's fact-sheet) and a **Groundedness** table (who wrote
-the chapter, whether the lint passed, what fraction of the must-say facts
-survived), so any sentence can be checked. Without a model the books are still
-written, in the chronicler's plain prose. Sample library: `library/seed_11/`.
+near-miss is scrubbed rather than published. Then a **second reader**
+(`bardic/verify.py`) grades every sentence — SUPPORTED, TEXTURE (light,
+weather, feeling: allowed), UNSUPPORTED (a record-type fact the record does not
+hold: a marriage, a death, a deed) or CONTRADICTED — with one test: *would the
+Annals have a field for this if it were true?* Offending sentences are
+rewritten or deleted. Every book ends with **The Record** (every chapter's
+fact-sheet) and a **Groundedness** table (who wrote the chapter, whether the
+lint passed, what fraction of the must-say facts survived, what the second
+reader checked and rewrote), so any sentence can be checked. Without a model
+the books are still written, in the chronicler's plain prose. Sample library:
+`library/seed_11_500y/`; output goes to `library/seed_<seed>_<years>y/`.
+
+Where this goes next is in `docs/brainstorm-2026-09-12-revelation.md`: not more
+genres but *revelation* — The Wrong Name (the ballad, then the deed and the
+person it erased), the witness beside the text, the count of recorded moments
+each chapter leaves untold, and a benchmark of truth against socially
+successful falsehood.
 
 ## Mokṣa — the pass / exit criterion (`soul.assess_moksha`)
 
@@ -269,6 +284,9 @@ bardic/
   render.py         local model as translator + groundedness lint + plain fallback
   book.py           chapters -> markdown, with The Record and Groundedness appended
   common.py         true sentences about lives, myths, works
+  verify.py         the second reader: sentence-level grading and repair
   epic.py novel.py history.py scripture.py tales.py   the genre miners
+  saga.py upanishad.py letters.py                     the newer forms
+tests/              unittest: the second reader (fake model) and the genre briefs
 compile_veda.py     the collected canon, unrendered (what Vyasa did: collect, arrange)
 ```

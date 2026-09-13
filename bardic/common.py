@@ -296,6 +296,27 @@ def canon_years(annals: Annals) -> Dict[int, int]:
     return {e.data["aid"]: e.year for e in annals.events if e.kind == "canon"}
 
 
+def notable_dead_line(life: Life) -> Optional[str]:
+    """One line on a life worth naming among a group's dead: what it did, in
+    the same phrasing history.py's 'notable dead' entries use, so a saga's
+    notable dead read the same as a chronicle's."""
+    if not (life.deeds or life.works or life.revelations or life.liberated):
+        return None
+    bits = []
+    if life.deeds:
+        d = max(life.deeds, key=lambda d: d.scale)
+        bits.append(f"seen {d.phrase()}")
+    if life.works:
+        bits.append(f"composed {len(life.works)} work{'s' if len(life.works) > 1 else ''}")
+    if life.revelations:
+        bits.append(f"spoke the teaching '{life.revelations[0]}'")
+    if life.liberated:
+        bits.append(f"freed from the wheel at death after {life.life_n} lives")
+    return (f"{life.name} of {life.house}, {ROLE_EN.get(life.role, 'a wanderer')}, "
+            f"born in year {life.born_year} and dead in year {life.died_year}: "
+            + "; ".join(bits) + ".")
+
+
 def world_between(annals: Annals, y0: int, y1: int, k: int = 3) -> List[str]:
     """What the world did while a soul waited between bodies."""
     evs = annals.events_between(y0, y1, kinds={"pralaya", "dawn", "avatar", "institution",

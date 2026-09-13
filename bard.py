@@ -9,7 +9,8 @@ project already trusts:
     THE WORLD SUPPLIES THE PLOT   (the Annals: every life, bond, test, deed,
                                    work and teaching, written down as it happens)
     THE MODEL SUPPLIES THE PROSE  (a local LLM as TRANSLATOR, never author)
-    A VERIFIER KEEPS IT HONEST    (groundedness lint: no invented facts; the
+    A VERIFIER KEEPS IT HONEST    (groundedness lint: no invented names or numbers;
+                                   a second reader: no invented events either; the
                                    record appended to every book)
 
 Five genres, each a query over the Annals rendered chapter by chapter:
@@ -19,6 +20,9 @@ Five genres, each a query over the Annals rendered chapter by chapter:
     history    the chronicle of the ages, by cycle and yuga, with the numbers
     scripture  the Veda: origins, the seers' sūtras, hymns by rasa, deed-songs
     tales      the three short forms: the long road, the fall, the forgotten doer
+    saga       one house across the ages: its rulers, seers, deeds, freed
+    upanishad  dialogues between a seer and a real child or partner
+    letters    two thread-bound souls write to each other across two lives
 
 Wall discipline: the Bard is narration-side — it READS a universe and writes
 literature; nothing it produces is ever read by physics, and the Annals roll
@@ -29,6 +33,7 @@ their own dice so a seed's measured outcome is unchanged by their existence.
     python3 bard.py --model none                   # no LLM: chronicler's plain prose
     python3 bard.py --model qwen2.5:7b --limit 3   # quick look: 3 chapters per genre
     python3 bard.py --repair                       # re-render only scrubbed/plain chapters
+    python3 bard.py --no-verify                    # skip the second reader (lint only)
 """
 from __future__ import annotations
 
@@ -63,7 +68,8 @@ def main() -> None:
     ap.add_argument("--years", type=int, default=500)
     ap.add_argument("--souls", type=int, default=800)
     ap.add_argument("--adults", type=int, default=200)
-    ap.add_argument("--genres", default="epic,novel,history,scripture,tales")
+    ap.add_argument("--genres",
+                    default="epic,novel,history,scripture,tales,saga,upanishad,letters")
     ap.add_argument("--model", default="auto",
                     help="ollama model as translator: 'auto' picks the best installed "
                          "(qwen3.6:35b > qwen3.5:9b > qwen2.5:7b); 'none' for plain prose")
@@ -73,13 +79,30 @@ def main() -> None:
     ap.add_argument("--repair", action="store_true",
                     help="keep chapters an earlier run rendered cleanly; re-render only "
                          "the scrubbed or plain ones")
+    ap.add_argument("--verify", dest="verify", action="store_true", default=None,
+                    help="the second reader: catch invented events the groundedness lint "
+                         "can't see (a marriage, a title, a deed the record never had) and "
+                         "rewrite or delete them. Default: on when a model is available.")
+    ap.add_argument("--no-verify", dest="verify", action="store_false",
+                    help="skip the second reader")
+    ap.add_argument("--verifier", default=None,
+                    help="ollama model for the second reader (default: same as --model)")
     args = ap.parse_args()
 
     u = run_cosmos(args.seed, args.years, args.souls, args.adults)
     renderer = Renderer(model=args.model, retries=args.retries)
-    out_dir = os.path.join(args.out, f"seed_{args.seed}")
+    out_dir = os.path.join(args.out, f"seed_{args.seed}_{args.years}y")
     os.makedirs(out_dir, exist_ok=True)
     print(f"renderer: {renderer.model if renderer.available() else 'plain prose (no model)'}")
+
+    verify = args.verify if args.verify is not None else renderer.available()
+    verifier = None
+    if verify:
+        verifier_model = args.verifier or args.model
+        verifier = renderer if verifier_model == args.model else Renderer(
+            model=verifier_model, retries=args.retries)
+        verify = verifier.available()
+    print(f"second reader: {verifier.model if verify else 'off'}")
 
     for g in [x.strip() for x in args.genres.split(",") if x.strip()]:
         if g not in bardic.GENRES:
@@ -90,7 +113,7 @@ def main() -> None:
             book.chapters = book.chapters[: args.limit]
         print(f"\n== {book.title} — {len(book.chapters)} chapters ==", flush=True)
         prior = load_prior(out_dir, book.slug) if args.repair else None
-        compile_book(book, renderer, out_dir, prior=prior)
+        compile_book(book, renderer, out_dir, prior=prior, verify=verify, verifier=verifier)
 
     if renderer.calls:
         print(f"\nmodel calls: {renderer.calls}, {renderer.tokens} tokens, "
